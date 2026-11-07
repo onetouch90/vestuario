@@ -61,7 +61,7 @@ select{cursor:pointer}
 .tenue{color:var(--texto-tenue)}
 .num{font-family:var(--mono);text-align:right;white-space:nowrap}
 /* Tarjetas */
-.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin-bottom:20px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:20px}
 .kpi{background:var(--superficie);border:1px solid var(--borde-suave);border-radius:var(--r-lg);padding:14px 16px}
 .kpi .etiqueta{font-size:12.5px;color:var(--texto-tenue)}
 .kpi .valor{font-family:var(--mono);font-size:22px;font-weight:600;margin-top:4px;letter-spacing:-.02em}
@@ -497,6 +497,7 @@ function vistaResumen() {
     <div class="kpi"><div class="etiqueta">Camisetas vendidas</div><div class="valor">${r.unidades}</div><div class="detalle">${r.vs.length ? "ticket prom. " + pesos(r.facturacion / r.vs.length) : "sin ventas todavía"}</div></div>
     <div class="kpi"><div class="etiqueta">Margen bruto</div><div class="valor menta">${pesos(r.margen)}</div><div class="detalle">${margenPct}% sobre ventas · costo ${pesos(r.costo)}</div></div>
     <div class="kpi"><div class="etiqueta">Resultado del mes</div><div class="valor ${r.resultado < 0 ? "naranja" : ""}">${pesos(r.resultado)}</div><div class="detalle">margen − gastos (${pesos(r.operativos)})</div></div>
+   <div class="kpi"><div class="etiqueta">Caja del mes</div><div class="valor ${r.caja < 0 ? "naranja" : "menta"}">${pesos(r.caja)}</div><div class="detalle">ventas − compras − gastos</div></div> 
     <div class="kpi"><div class="etiqueta">Stock actual</div><div class="valor">${stockUnidades} u.</div><div class="detalle">${pesos(stockValor)} a costo</div></div>
   </div>
   <div class="grilla">
