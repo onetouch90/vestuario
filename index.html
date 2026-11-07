@@ -1,0 +1,1032 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vestuario — gestión de camisetas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --fondo:#0f1b1e; --fondo-lateral:#0b1517; --superficie:#142427; --superficie-alta:#1d3236;
+  --borde:#2c474c; --borde-suave:#22383d;
+  --texto:#e6f1ee; --texto-secundario:#c8d9d5; --texto-tenue:#9fb5b0;
+  --menta:#6fe3c1; --menta-oscuro:#17302f; --menta-borde:#2e5a52; --tinta-sobre-menta:#0f1b1e;
+  --naranja:#ffa66b; --naranja-oscuro:#1a1714; --naranja-borde:#6b4426; --aviso-texto:#ffe1cc;
+  --sans:"Space Grotesk", system-ui, sans-serif; --mono:"JetBrains Mono", ui-monospace, monospace;
+  --r-sm:6px; --r-md:10px; --r-lg:12px; --r-xl:14px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--fondo);color:var(--texto);font-family:var(--sans);font-size:15px;line-height:1.5}
+button,input,select,textarea{font:inherit;color:inherit}
+.app{display:grid;grid-template-columns:232px minmax(0,1fr);min-height:100vh}
+/* Barra lateral */
+.lateral{background:var(--fondo-lateral);border-right:1px solid var(--borde-suave);padding:20px 14px;display:flex;flex-direction:column;gap:20px;position:sticky;top:0;height:100vh}
+.marca{display:flex;align-items:center;gap:10px;padding:0 6px}
+.marca b{font-size:22px;font-weight:700;letter-spacing:-.02em}
+.marca b span{color:var(--menta)}
+.nav{display:flex;flex-direction:column;gap:2px}
+.nav a{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:var(--r-md);color:var(--texto-secundario);text-decoration:none;font-weight:500}
+.nav a:hover{background:var(--superficie)}
+.nav a.activo{background:var(--menta-oscuro);color:var(--menta)}
+.nav svg{width:18px;height:18px;flex:none}
+.lateral .pie{margin-top:auto;display:flex;flex-direction:column;gap:8px}
+.estado-datos{font-family:var(--mono);font-size:12px;color:var(--texto-tenue);padding:0 6px;display:flex;align-items:center;gap:8px}
+.punto{display:inline-block;width:8px;height:8px;min-width:8px;max-width:8px;border-radius:50%;background:var(--texto-tenue);flex:0 0 8px}
+.punto.ok{background:var(--menta)} .punto.aviso{background:var(--naranja)}
+/* Contenido */
+.principal{padding:28px 32px 60px;max-width:1240px;width:100%;min-width:0}
+.cabecera{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:22px}
+h1{font-size:26px;line-height:1.2;font-weight:600;letter-spacing:-.015em;margin:0}
+.sub{color:var(--texto-tenue);font-size:13px;margin-top:4px}
+h2{font-size:16px;font-weight:600;margin:0 0 12px;letter-spacing:-.01em}
+.acciones{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.btn{border:1px solid var(--borde);background:transparent;border-radius:var(--r-md);padding:8px 14px;cursor:pointer;font-weight:500;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.btn:hover{border-color:var(--texto-tenue)}
+.btn.principal-btn{background:var(--menta);color:var(--tinta-sobre-menta);border-color:var(--menta);font-weight:600}
+.btn.principal-btn:hover{filter:brightness(1.07)}
+.btn.chico{padding:4px 9px;font-size:13px}
+.btn.peligro{color:var(--naranja);border-color:var(--naranja-borde)}
+.btn:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,a:focus-visible{outline:2px solid var(--menta);outline-offset:1px}
+.icono-btn{background:none;border:1px solid transparent;border-radius:var(--r-sm);padding:4px 6px;cursor:pointer;color:var(--texto-tenue)}
+.icono-btn:hover{color:var(--texto);border-color:var(--borde)}
+.icono-btn.borrar:hover{color:var(--naranja);border-color:var(--naranja-borde)}
+input,select,textarea{background:var(--fondo);border:1px solid var(--borde);border-radius:var(--r-md);padding:8px 10px;min-width:0}
+input:focus,select:focus,textarea:focus{border-color:var(--menta);outline:none}
+select{cursor:pointer}
+.campo{display:flex;flex-direction:column;gap:5px}
+.campo label{font-size:12.5px;color:var(--texto-tenue)}
+.dato{font-family:var(--mono);font-size:12.5px}
+.tenue{color:var(--texto-tenue)}
+.num{font-family:var(--mono);text-align:right;white-space:nowrap}
+/* Tarjetas */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin-bottom:20px}
+.kpi{background:var(--superficie);border:1px solid var(--borde-suave);border-radius:var(--r-lg);padding:14px 16px}
+.kpi .etiqueta{font-size:12.5px;color:var(--texto-tenue)}
+.kpi .valor{font-family:var(--mono);font-size:22px;font-weight:600;margin-top:4px;letter-spacing:-.02em}
+.kpi .detalle{font-family:var(--mono);font-size:12px;color:var(--texto-tenue);margin-top:4px}
+.kpi .valor.menta{color:var(--menta)} .kpi .valor.naranja{color:var(--naranja)}
+.grilla{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.panel{background:var(--superficie);border:1px solid var(--borde-suave);border-radius:var(--r-lg);padding:16px}
+.panel.ancho{grid-column:1/-1}
+.lista{display:flex;flex-direction:column}
+.lista .fila{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 0;border-top:1px solid var(--borde-suave)}
+.lista .fila:first-child{border-top:none}
+.barra{height:6px;background:var(--borde-suave);border-radius:3px;overflow:hidden;margin-top:6px}
+.barra i{display:block;height:100%;background:var(--menta);border-radius:3px}
+.vacio{color:var(--texto-tenue);font-size:14px;padding:18px 0;text-align:center}
+/* Tablas */
+.tabla-envoltura{background:var(--superficie);border:1px solid var(--borde-suave);border-radius:var(--r-lg);overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{text-align:left;font-weight:500;font-size:12.5px;color:var(--texto-tenue);padding:10px 12px;border-bottom:1px solid var(--borde);white-space:nowrap}
+td{padding:10px 12px;border-bottom:1px solid var(--borde-suave);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tbody tr:hover td{background:rgba(255,255,255,.015)}
+th.num{text-align:right}
+.filtros{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.filtros input[type=search]{min-width:220px;flex:1 1 220px}
+/* Chips */
+.chip{display:inline-flex;align-items:center;gap:4px;font-family:var(--mono);font-size:12px;padding:2px 7px;border-radius:var(--r-sm);border:1px solid var(--borde);color:var(--texto-secundario);white-space:nowrap}
+.chip.menta{background:var(--menta-oscuro);border-color:var(--menta-borde);color:var(--menta)}
+.chip.naranja{background:var(--naranja-oscuro);border-color:var(--naranja-borde);color:var(--naranja)}
+.chip.cero{color:var(--texto-tenue);border-style:dashed;opacity:.75}
+.talles{display:flex;flex-wrap:wrap;gap:4px}
+select.estado{padding:3px 6px;font-size:13px;border-radius:var(--r-sm)}
+select.estado.e-pend{color:var(--naranja);border-color:var(--naranja-borde);background:var(--naranja-oscuro)}
+select.estado.e-entr{color:var(--menta);border-color:var(--menta-borde);background:var(--menta-oscuro)}
+/* Avisos */
+.aviso{background:var(--naranja-oscuro);border:1px solid var(--naranja-borde);color:var(--aviso-texto);border-radius:var(--r-lg);padding:12px 14px;display:flex;gap:10px;align-items:flex-start;font-size:14px;margin-bottom:16px}
+.aviso svg{color:var(--naranja);flex:none;margin-top:2px}
+.aviso a{color:var(--naranja)}
+.info{background:var(--superficie);border:1px solid var(--borde-suave);border-radius:var(--r-lg);padding:12px 14px;font-size:13.5px;color:var(--texto-secundario);margin-bottom:16px}
+/* Modal */
+.velo{position:fixed;inset:0;background:rgba(5,10,11,.72);display:flex;align-items:flex-start;justify-content:center;padding:40px 16px;overflow-y:auto;z-index:50}
+.modal{background:var(--fondo-lateral);border:1px solid var(--borde);border-radius:var(--r-xl);width:100%;max-width:640px;padding:22px}
+.modal.ancho{max-width:860px}
+.modal h2{font-size:19px;margin-bottom:16px}
+.form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.form .completo{grid-column:1/-1}
+.form-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.pie-modal{display:flex;justify-content:flex-end;gap:8px;margin-top:20px;align-items:center}
+.pie-modal .total{margin-right:auto;font-family:var(--mono);font-size:18px;font-weight:600}
+.pie-modal .total small{font-family:var(--sans);font-weight:400;font-size:12.5px;color:var(--texto-tenue);display:block}
+.talles-form{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px}
+.talles-form .campo label{font-family:var(--mono);text-align:center}
+.talles-form input{text-align:center;font-family:var(--mono);padding:7px 4px}
+.items{display:flex;flex-direction:column;gap:8px}
+.item{display:grid;grid-template-columns:minmax(0,2.6fr) minmax(0,1fr) 70px minmax(0,1.1fr) minmax(0,1.6fr) 30px;gap:8px;align-items:end;background:var(--superficie);border:1px solid var(--borde-suave);border-radius:var(--r-lg);padding:10px}
+.check{display:flex;align-items:center;gap:8px;font-size:14px;cursor:pointer}
+.check input{width:16px;height:16px;accent-color:var(--menta)}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--superficie-alta);border:1px solid var(--borde);padding:10px 16px;border-radius:var(--r-md);font-size:14px;z-index:60;box-shadow:0 6px 24px rgba(0,0,0,.35)}
+.toast.error{background:var(--naranja-oscuro);border-color:var(--naranja-borde);color:var(--aviso-texto)}
+.oculto{display:none!important}
+@media (max-width:900px){
+  .app{grid-template-columns:minmax(0,1fr);grid-template-rows:auto 1fr}
+  .lateral{position:sticky;height:auto;align-self:start;flex-direction:row;align-items:center;padding:10px 12px;gap:10px;z-index:20;overflow-x:auto;border-right:none;border-bottom:1px solid var(--borde-suave)}
+  .marca b{font-size:18px}
+  .nav{flex-direction:row}
+  .nav a span{display:none}
+  .lateral .pie{display:none}
+  .principal{padding:20px 14px 60px}
+  .grilla{grid-template-columns:1fr}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .kpi .valor{font-size:18px}
+  .form,.form-3{grid-template-columns:1fr}
+  .talles-form{grid-template-columns:repeat(4,minmax(0,1fr))}
+  .item{grid-template-columns:1fr 1fr}
+  .item .campo:first-child,.item .campo.pers{grid-column:1/-1}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="lateral">
+    <div class="marca">
+      <svg width="30" height="30" viewBox="0 0 32 32" aria-hidden="true">
+        <path d="M11 4 L5 7 L2 13 L7 15 L8 12 L8 28 L24 28 L24 12 L25 15 L30 13 L27 7 L21 4 Q16 9 11 4 Z" fill="none" stroke="#6fe3c1" stroke-width="2" stroke-linejoin="round"/>
+        <path d="M11 4 Q16 9 21 4" fill="none" stroke="#ffa66b" stroke-width="2" stroke-linecap="round"/>
+        <path d="M13 16 H19 M13 20 H19" stroke="#9fb5b0" stroke-width="1.6" stroke-linecap="round"/>
+      </svg>
+      <b>Vest<span>uario</span></b>
+    </div>
+    <nav class="nav" id="nav">
+      <a href="#resumen" data-vista="resumen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span>Resumen</span></a>
+      <a href="#ventas" data-vista="ventas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5h2l2.4 10.2a1 1 0 0 0 1 .8h9.2a1 1 0 0 0 1-.8L21 8H6.2"/><circle cx="9" cy="20" r="1.3"/><circle cx="17" cy="20" r="1.3"/></svg><span>Ventas</span></a>
+      <a href="#stock" data-vista="stock"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M8 3 4 5 2 9l3 1.5V21h14V10.5L22 9l-2-4-4-2c-1 2-7 2-8 0Z"/></svg><span>Stock</span></a>
+      <a href="#clientes" data-vista="clientes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.5 3.4-5.5 6.5-5.5s5.7 2 6.5 5.5M16 4.6a3.5 3.5 0 0 1 0 6.8M18 14.8c1.8.7 3 2.5 3.5 5.2"/></svg><span>Clientes</span></a>
+      <a href="#gastos" data-vista="gastos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M7 15h4"/></svg><span>Gastos</span></a>
+      <a href="#conexion" data-vista="conexion"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 14a4.5 4.5 0 0 0 6.4 0l3-3a4.5 4.5 0 0 0-6.4-6.4l-1 1"/><path d="M14 10a4.5 4.5 0 0 0-6.4 0l-3 3a4.5 4.5 0 0 0 6.4 6.4l1-1"/></svg><span>Conexión</span></a>
+    </nav>
+    <div class="pie">
+      <button class="btn chico" data-accion="respaldo">Respaldo</button>
+      <div class="estado-datos" id="estadoDatos"><span class="punto"></span><span>Conectando…</span></div>
+    </div>
+  </aside>
+  <main class="principal" id="vista"></main>
+</div>
+<div id="capaModal"></div>
+<div id="capaToast"></div>
+
+<script>
+(() => {
+"use strict";
+
+/* ===================== Constantes ===================== */
+const COLECCIONES = ["productos", "ventas", "clientes", "gastos"];
+const TALLES_ADULTO = ["XS", "S", "M", "L", "XL", "XXL", "3XL"];
+const TALLES_NINO = ["4", "6", "8", "10", "12", "14", "16"];
+const MODELOS = ["Titular", "Suplente", "Alternativa", "Arquero", "Entrenamiento", "Retro"];
+const VERSIONES = ["Hincha", "Jugador", "Retro", "Réplica"];
+const CANALES = ["Instagram", "WhatsApp", "Mercado Libre", "Feria / local", "Web", "Otro"];
+const MEDIOS_PAGO = ["Transferencia", "Efectivo", "Mercado Pago", "Tarjeta", "Otro"];
+const ESTADOS = ["Pendiente de pago", "Pagada", "Enviada", "Entregada"];
+const CATEGORIAS_GASTO = ["Compra de mercadería", "Envíos", "Publicidad", "Packaging", "Comisiones", "Estampado", "Otros"];
+const UMBRAL_STOCK_BAJO = 1;
+const CLAVE_LOCAL = "vestuario-datos-v1";
+
+/* ===================== Estado ===================== */
+const datos = { productos: [], ventas: [], clientes: [], gastos: [] };
+let db = null;
+let modo = "conectando"; // conectando | nube | local | sin-conexion
+let vistaActual = "resumen";
+const filtros = {
+  mesResumen: mesDe(hoy()),
+  ventasMes: mesDe(hoy()), ventasEstado: "", ventasBuscar: "",
+  stockBuscar: "", stockVersion: "", stockSoloConStock: false,
+  clientesBuscar: "",
+  gastosMes: mesDe(hoy()),
+};
+
+/* ===================== Utilidades ===================== */
+function hoy() { const d = new Date(); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); }
+function mesDe(fecha) { return String(fecha || "").slice(0, 7); }
+function nuevoId() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
+const formatoPesos = new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", maximumFractionDigits: 0 });
+function pesos(n) { return formatoPesos.format(Math.round(Number(n) || 0)); }
+function numero(v) { const n = Number(String(v ?? "").replace(",", ".")); return Number.isFinite(n) ? n : 0; }
+function entero(v) { return Math.max(0, Math.floor(numero(v))); }
+function esc(s) { return String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
+function fechaCorta(f) { if (!f) return ""; const [a, m, d] = f.split("-"); return d + "/" + m + "/" + a.slice(2); }
+const NOMBRES_MES = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+function nombreMes(m) { if (!m) return ""; const [a, mm] = m.split("-"); return NOMBRES_MES[Number(mm) - 1] + " " + a; }
+function normalizar(s) { return String(s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").trim(); }
+function tallesDe(p) { return p && p.tipoTalle === "nino" ? TALLES_NINO : TALLES_ADULTO; }
+function stockTotal(p) { return Object.values(p.talles || {}).reduce((a, b) => a + (Number(b) || 0), 0); }
+function nombreProducto(p) { if (!p) return "Producto eliminado"; return [p.club, p.temporada].filter(Boolean).join(" ") + " · " + p.modelo + " · " + p.version + (p.tipoTalle === "nino" ? " · niño" : ""); }
+function opciones(lista, actual, vacio) {
+  return (vacio !== undefined ? `<option value="">${esc(vacio)}</option>` : "") +
+    lista.map(v => `<option value="${esc(v)}"${v === actual ? " selected" : ""}>${esc(v)}</option>`).join("");
+}
+function mesesDisponibles() {
+  const set = new Set([mesDe(hoy())]);
+  datos.ventas.forEach(v => v.fecha && set.add(mesDe(v.fecha)));
+  datos.gastos.forEach(g => g.fecha && set.add(mesDe(g.fecha)));
+  return [...set].sort().reverse();
+}
+function selectMes(id, actual, conTodos) {
+  return `<select id="${id}">${conTodos ? `<option value=""${actual === "" ? " selected" : ""}>Todos los meses</option>` : ""}${mesesDisponibles().map(m => `<option value="${m}"${m === actual ? " selected" : ""}>${nombreMes(m)}</option>`).join("")}</select>`;
+}
+function toast(texto, error) {
+  const capa = document.getElementById("capaToast");
+  capa.innerHTML = `<div class="toast${error ? " error" : ""}" role="status">${esc(texto)}</div>`;
+  clearTimeout(toast.t); toast.t = setTimeout(() => { capa.innerHTML = ""; }, error ? 5000 : 2600);
+}
+const ICONO_AVISO = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3 2 20h20L12 3Z"/><path d="M12 10v4M12 17.5v.01"/></svg>`;
+const ICONO_EDITAR = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16v4Z"/></svg>`;
+const ICONO_BORRAR = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>`;
+
+/* ===================== Capa de datos (Google Sheets) ===================== */
+const CLAVE_CONEXION = "vestuario-sheets-v1";
+const CLAVE_SIN_CONEXION = "vestuario-sin-conexion";
+let conexion = null;          // { url, clave } de este dispositivo
+let ultimaSync = 0;
+let ultimoRemoto = "";
+let cola = [], enviando = false, timerCola = null, refrescando = null;
+
+function guardarLocal() { try { localStorage.setItem(CLAVE_LOCAL, JSON.stringify(datos)); } catch (e) {} }
+function cargarLocal() {
+  try { const t = localStorage.getItem(CLAVE_LOCAL); if (t) { const d = JSON.parse(t); COLECCIONES.forEach(c => { if (Array.isArray(d[c])) datos[c] = d[c]; }); } } catch (e) {}
+}
+function leerConexion() { try { const c = JSON.parse(localStorage.getItem(CLAVE_CONEXION) || "null"); if (c && c.url && c.clave) return c; } catch (e) {} return null; }
+function grabarConexion(c) { try { if (c) localStorage.setItem(CLAVE_CONEXION, JSON.stringify(c)); else localStorage.removeItem(CLAVE_CONEXION); } catch (e) {} }
+function usaLocalSinConexion() { try { return localStorage.getItem(CLAVE_SIN_CONEXION) === "1"; } catch (e) { return false; } }
+function setModo(m) { const cambio = modo !== m; modo = m; pintarEstadoDatos(); if (cambio) render(); }
+
+async function llamar(cuerpo, con) {
+  con = con || conexion;
+  let r;
+  try {
+    // text/plain evita la consulta previa (CORS) que Apps Script no responde
+    r = await fetch(con.url, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify({ ...cuerpo, clave: con.clave }) });
+  } catch (e) { throw { code: "red" }; }
+  let d;
+  try { d = await r.json(); } catch (e) { throw { code: "respuesta" }; }
+  if (!d.ok) throw { code: d.error === "clave" ? "clave" : "servidor", message: d.error };
+  return d;
+}
+
+// Campos extra solo para que la planilla se lea cómoda
+function paraHoja(col, obj) {
+  const o = { ...obj };
+  if (col === "productos") o.stock = stockTotal(o);
+  if (col === "ventas") {
+    o.unidades = unidadesVenta(o);
+    o.detalle = (o.items || []).map(i => `${i.cant}× ${i.desc} (${i.talle})${i.pers ? " " + i.pers : ""}`).join(" | ");
+  }
+  return o;
+}
+function aplicarRemotos(d) {
+  const texto = JSON.stringify(d);
+  if (texto === ultimoRemoto) return;
+  ultimoRemoto = texto;
+  COLECCIONES.forEach(c => {
+    if (!Array.isArray(d[c])) return;
+    datos[c] = d[c].map(o => { const x = { ...o }; delete x.stock; delete x.unidades; delete x.detalle; return x; });
+  });
+  guardarLocal(); render();
+}
+function refrescar() {
+  if (!conexion) return Promise.resolve();
+  if (refrescando) return refrescando;
+  refrescando = (async () => {
+    try {
+      const d = await llamar({ accion: "leer" });
+      if (!enviando && !cola.length) aplicarRemotos(d.datos);
+      ultimaSync = Date.now(); setModo("sheets");
+    } catch (e) { setModo(e.code === "clave" ? "sheets-clave" : "sheets-error"); }
+    finally { refrescando = null; }
+  })();
+  return refrescando;
+}
+// Junta los cambios que se hacen juntos (una venta + su stock) en un solo envío
+function encolar(op) {
+  return new Promise((resolver, rechazar) => {
+    cola.push({ op, resolver, rechazar });
+    clearTimeout(timerCola); timerCola = setTimeout(vaciarCola, 60);
+  });
+}
+async function vaciarCola() {
+  if (enviando || !cola.length) return;
+  enviando = true; pintarEstadoDatos();
+  const lote = cola.splice(0);
+  try {
+    const d = await llamar({ accion: "escribir", ops: lote.map(x => x.op) });
+    lote.forEach(x => x.resolver());
+    ultimaSync = Date.now();
+    enviando = false;
+    if (!cola.length) aplicarRemotos(d.datos);
+    setModo("sheets");
+  } catch (e) {
+    enviando = false;
+    lote.forEach(x => x.rechazar(e));
+    setModo(e.code === "clave" ? "sheets-clave" : "sheets-error");
+  } finally {
+    enviando = false; pintarEstadoDatos();
+    if (cola.length) vaciarCola();
+  }
+}
+async function guardar(col, obj) {
+  const i = datos[col].findIndex(x => x.id === obj.id);
+  if (i >= 0) datos[col][i] = { ...obj }; else datos[col].push({ ...obj });
+  guardarLocal(); render();
+  if (!conexion) return;
+  return encolar({ col, tipo: "guardar", obj: paraHoja(col, obj) });
+}
+async function borrar(col, id) {
+  datos[col] = datos[col].filter(x => x.id !== id);
+  guardarLocal(); render();
+  if (!conexion) return;
+  return encolar({ col, tipo: "borrar", id });
+}
+function errorEscritura(e) {
+  const code = e && e.code;
+  if (code === "clave") toast("La planilla rechazó la clave: revisala en Conexión.", true);
+  else if (code === "red") toast("No pude guardar en Google Sheets: revisá tu conexión. Volví a cargar los datos de la planilla.", true);
+  else toast("No se pudo guardar en la planilla. Probá de nuevo.", true);
+  console.error(e);
+  if (conexion) setTimeout(refrescar, 300);
+}
+function pintarEstadoDatos() {
+  const el = document.getElementById("estadoDatos");
+  const m = enviando ? ["", "Guardando…"] : ({
+    conectando: ["", "Conectando con la planilla…"],
+    sheets: ["ok", "Sincronizado con Google Sheets"],
+    "sheets-error": ["aviso", "Sin conexión con la planilla"],
+    "sheets-clave": ["aviso", "Clave incorrecta"],
+    local: ["aviso", "Solo en este navegador"],
+    "sin-configurar": ["aviso", "Sin conectar"],
+  }[modo] || ["", ""]);
+  el.innerHTML = `<span class="punto ${m[0]}"></span><span>${m[1]}</span>`;
+}
+function iniciarDatos() {
+  cargarLocal();
+  conexion = leerConexion();
+  if (conexion) { modo = "conectando"; pintarEstadoDatos(); render(); refrescar(); }
+  else {
+    modo = usaLocalSinConexion() ? "local" : "sin-configurar";
+    pintarEstadoDatos();
+    if (modo === "sin-configurar" && !location.hash) location.hash = "conexion"; else render();
+  }
+  setInterval(() => { if (conexion && document.visibilityState === "visible") refrescar(); }, 30000);
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") refrescar(); });
+  window.addEventListener("beforeunload", e => { if (cola.length || enviando) { e.preventDefault(); e.returnValue = ""; } });
+}
+async function conectar() {
+  const url = document.getElementById("cxUrl").value.trim();
+  const clave = document.getElementById("cxClave").value;
+  const aviso = t => { document.getElementById("cxAviso").innerHTML = t ? `<div class="aviso" style="margin:14px 0 0">${ICONO_AVISO}<div>${t}</div></div>` : ""; };
+  if (!/^https:\/\/script\.google\.com\/macros\/s\/[^/\s]+\/exec$/.test(url)) { aviso("La dirección tiene que empezar con https://script.google.com/macros/s/ y terminar en /exec. La copiás de Apps Script, en «Implementar → Administrar implementaciones»."); return; }
+  if (!clave) { aviso("Escribí la clave que pusiste en el script."); return; }
+  const btn = document.getElementById("cxBoton"); btn.disabled = true; btn.textContent = "Conectando…"; aviso("");
+  const con = { url, clave };
+  let remoto;
+  try { remoto = (await llamar({ accion: "leer" }, con)).datos; }
+  catch (e) {
+    btn.disabled = false; btn.textContent = "Conectar";
+    aviso(e.code === "clave" ? "La clave no coincide con la que pusiste en el script." : "No pude conectarme. Revisá que la implementación tenga acceso «Cualquier usuario» y que la dirección sea la de la implementación (termina en /exec).");
+    return;
+  }
+  const remotoVacio = COLECCIONES.every(c => !(remoto[c] || []).length);
+  const localTiene = COLECCIONES.some(c => datos[c].length);
+  conexion = con; grabarConexion(con);
+  try { localStorage.removeItem(CLAVE_SIN_CONEXION); } catch (e) {}
+  ultimaSync = Date.now(); modo = "sheets"; pintarEstadoDatos();
+  location.hash = "resumen";
+  if (remotoVacio && localTiene) {
+    render();
+    const resumen = `${datos.productos.length} camisetas, ${datos.ventas.length} ventas, ${datos.clientes.length} clientes y ${datos.gastos.length} gastos`;
+    confirmar("Subir tus datos a la planilla", `La planilla está vacía y en este navegador tenés ${resumen}. ¿Los subo? Si cancelás, empezás con la planilla vacía.`, "Subir datos", async () => {
+      const ps = [];
+      COLECCIONES.forEach(c => datos[c].forEach(o => ps.push(encolar({ col: c, tipo: "guardar", obj: paraHoja(c, o) }))));
+      await Promise.all(ps); toast("Datos subidos a la planilla.");
+    });
+  } else {
+    ultimoRemoto = ""; aplicarRemotos(remoto); render(); toast("Conectado con Google Sheets.");
+  }
+}
+
+/* ===================== Cálculos ===================== */
+function ventasDelMes(mes) { return datos.ventas.filter(v => mesDe(v.fecha) === mes); }
+function unidadesVenta(v) { return (v.items || []).reduce((a, it) => a + (Number(it.cant) || 0), 0); }
+function costoVenta(v) { return (v.items || []).reduce((a, it) => a + (Number(it.cant) || 0) * (Number(it.costo) || 0), 0); }
+function subtotalItems(items) { return (items || []).reduce((a, it) => a + (Number(it.cant) || 0) * (Number(it.precio) || 0), 0); }
+function resumenMes(mes) {
+  const vs = ventasDelMes(mes);
+  const facturacion = vs.reduce((a, v) => a + (Number(v.total) || 0), 0);
+  const envios = vs.reduce((a, v) => a + (Number(v.envio) || 0), 0);
+  const costo = vs.reduce((a, v) => a + costoVenta(v), 0);
+  const unidades = vs.reduce((a, v) => a + unidadesVenta(v), 0);
+  const gs = datos.gastos.filter(g => mesDe(g.fecha) === mes);
+  const compras = gs.filter(g => g.categoria === "Compra de mercadería").reduce((a, g) => a + (Number(g.monto) || 0), 0);
+  const operativos = gs.filter(g => g.categoria !== "Compra de mercadería").reduce((a, g) => a + (Number(g.monto) || 0), 0);
+  const margen = facturacion - costo;
+  return { vs, facturacion, envios, costo, unidades, compras, operativos, margen, resultado: margen - operativos, caja: facturacion - compras - operativos };
+}
+function clientePorNombre(nombre) { const n = normalizar(nombre); return datos.clientes.find(c => normalizar(c.nombre) === n); }
+
+/* ===================== Vistas ===================== */
+function render() {
+  document.querySelectorAll("#nav a").forEach(a => a.classList.toggle("activo", a.dataset.vista === vistaActual));
+  const v = document.getElementById("vista");
+  const foco = document.activeElement && document.activeElement.id;
+  const selInicio = document.activeElement && document.activeElement.selectionStart;
+  const fn = { resumen: vistaResumen, ventas: vistaVentas, stock: vistaStock, clientes: vistaClientes, gastos: vistaGastos, conexion: vistaConexion }[vistaActual];
+  v.innerHTML = avisoModo() + fn();
+  if (foco) { const el = document.getElementById(foco); if (el && v.contains(el)) { el.focus(); try { if (selInicio != null) el.setSelectionRange(selInicio, selInicio); } catch (e) {} } }
+}
+function avisoModo() {
+  if (vistaActual === "conexion") return "";
+  if (modo === "local" || modo === "sin-configurar") return `<div class="aviso">${ICONO_AVISO}<div>Estás usando Vestuario sin conectar: los datos quedan solo en este navegador. <a href="#conexion">Conectá tu Google Sheets</a> para usarlo desde la PC y el celular.</div></div>`;
+  if (modo === "sheets-error") return `<div class="aviso">${ICONO_AVISO}<div>No pude conectarme con tu planilla. Lo que ves puede estar desactualizado y los cambios nuevos no se guardan hasta que vuelva la conexión.</div></div>`;
+  if (modo === "sheets-clave") return `<div class="aviso">${ICONO_AVISO}<div>La planilla rechazó la clave. <a href="#conexion">Revisala en Conexión</a>.</div></div>`;
+  return "";
+}
+function vistaConexion() {
+  const hora = ultimaSync ? new Date(ultimaSync).toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" }) : "—";
+  const bloque = conexion ? `<div class="panel" style="margin-bottom:16px"><h2>Google Sheets</h2><div class="lista">
+      <div class="fila"><span>Estado</span><span class="chip ${modo === "sheets" ? "menta" : "naranja"}">${modo === "sheets" ? "Conectado" : modo === "conectando" ? "Conectando…" : "Con problemas"}</span></div>
+      <div class="fila"><span>Última sincronización</span><span class="dato">${hora}</span></div>
+      <div class="fila"><span>Dirección</span><span class="dato" style="overflow:hidden;text-overflow:ellipsis;max-width:60%;white-space:nowrap">${esc(conexion.url)}</span></div></div>
+      <div class="acciones" style="margin-top:14px"><button class="btn" data-accion="sincronizar">Sincronizar ahora</button><button class="btn peligro" data-accion="desconectar">Desconectar este dispositivo</button></div>
+      <div class="dato tenue" style="margin-top:12px;font-family:var(--sans)">La página se actualiza sola cada 30 segundos y cada vez que volvés a abrirla, así ves lo que cargaste desde el otro dispositivo.</div></div>`
+    : `<div class="panel" style="margin-bottom:16px"><h2>Conectá tu Google Sheets</h2>
+      <p class="tenue" style="margin:0 0 14px">Pegá la dirección de la aplicación web de Apps Script y la clave que pusiste en el script. Se hace una sola vez en cada dispositivo (la PC y el celular).</p>
+      <form class="form" id="formConexion" autocomplete="off">
+        <div class="campo completo"><label for="cxUrl">Dirección de la aplicación web</label><input id="cxUrl" inputmode="url" placeholder="https://script.google.com/macros/s/…/exec"></div>
+        <div class="campo"><label for="cxClave">Clave</label><input id="cxClave" type="password"></div>
+        <div class="campo" style="justify-content:flex-end"><button class="btn principal-btn" type="submit" id="cxBoton">Conectar</button></div>
+      </form><div id="cxAviso"></div></div>
+      ${modo !== "local" ? `<div class="info">¿Querés probarla antes? <a href="#resumen" data-accion="usar-local" style="color:var(--menta)">Usar sin conectar</a>: los datos quedan solo en este navegador y después los podés subir a la planilla.</div>` : ""}`;
+  return cabecera("Conexión", "Dónde se guardan tus datos", "") + bloque +
+    `<div class="panel"><h2>Respaldo</h2><p class="tenue" style="margin:0 0 12px">Copiá todos tus datos como texto o restaurá un respaldo anterior.</p><button class="btn" data-accion="respaldo">Abrir respaldo</button></div>`;
+}
+function cabecera(titulo, sub, acciones) {
+  return `<div class="cabecera"><div><h1>${titulo}</h1>${sub ? `<div class="sub">${sub}</div>` : ""}</div><div class="acciones">${acciones || ""}</div></div>`;
+}
+
+/* ---------- Resumen ---------- */
+function vistaResumen() {
+  const mes = filtros.mesResumen;
+  const r = resumenMes(mes);
+  const stockUnidades = datos.productos.reduce((a, p) => a + stockTotal(p), 0);
+  const stockValor = datos.productos.reduce((a, p) => a + stockTotal(p) * (Number(p.costo) || 0), 0);
+  const margenPct = r.facturacion > 0 ? Math.round(r.margen / r.facturacion * 100) : 0;
+
+  // Más vendidas del mes por club
+  const porClub = {};
+  r.vs.forEach(v => (v.items || []).forEach(it => { const k = it.club || "Sin club"; porClub[k] = (porClub[k] || 0) + (Number(it.cant) || 0); }));
+  const top = Object.entries(porClub).sort((a, b) => b[1] - a[1]).slice(0, 6);
+  const maxTop = top.length ? top[0][1] : 1;
+
+  // Para atender
+  const pendientes = datos.ventas.filter(v => v.estado === "Pendiente de pago" || v.estado === "Pagada").sort((a, b) => (a.fecha || "").localeCompare(b.fecha || ""));
+
+  // Stock bajo
+  const bajos = [];
+  datos.productos.forEach(p => {
+    const t = tallesDe(p).filter(tl => (p.tallesActivos || []).includes(tl) && (Number((p.talles || {})[tl]) || 0) <= UMBRAL_STOCK_BAJO);
+    if (t.length) bajos.push({ p, talles: t });
+  });
+
+  const ultimas = [...datos.ventas].sort((a, b) => (b.fecha || "").localeCompare(a.fecha || "") || (b.creado || 0) - (a.creado || 0)).slice(0, 5);
+
+  return cabecera("Resumen", `Cómo viene ${nombreMes(mes)}`, `${selectMes("mesResumen", mes)}<button class="btn principal-btn" data-accion="nueva-venta">+ Nueva venta</button>`) + `
+  <div class="kpis">
+    <div class="kpi"><div class="etiqueta">Facturación</div><div class="valor">${pesos(r.facturacion)}</div><div class="detalle">${r.vs.length} venta${r.vs.length === 1 ? "" : "s"}${r.envios ? " · incl. " + pesos(r.envios) + " de envíos" : ""}</div></div>
+    <div class="kpi"><div class="etiqueta">Camisetas vendidas</div><div class="valor">${r.unidades}</div><div class="detalle">${r.vs.length ? "ticket prom. " + pesos(r.facturacion / r.vs.length) : "sin ventas todavía"}</div></div>
+    <div class="kpi"><div class="etiqueta">Margen bruto</div><div class="valor menta">${pesos(r.margen)}</div><div class="detalle">${margenPct}% sobre ventas · costo ${pesos(r.costo)}</div></div>
+    <div class="kpi"><div class="etiqueta">Resultado del mes</div><div class="valor ${r.resultado < 0 ? "naranja" : ""}">${pesos(r.resultado)}</div><div class="detalle">margen − gastos (${pesos(r.operativos)})</div></div>
+    <div class="kpi"><div class="etiqueta">Stock actual</div><div class="valor">${stockUnidades} u.</div><div class="detalle">${pesos(stockValor)} a costo</div></div>
+  </div>
+  <div class="grilla">
+    <section class="panel">
+      <h2>Para atender</h2>
+      ${pendientes.length ? `<div class="lista">${pendientes.slice(0, 7).map(v => `
+        <div class="fila"><div><div>${esc(v.clienteNombre || "Sin nombre")}</div><div class="dato tenue">${fechaCorta(v.fecha)} · ${unidadesVenta(v)} u. · ${pesos(v.total)}</div></div>
+        <span class="chip ${v.estado === "Pendiente de pago" ? "naranja" : ""}">${v.estado === "Pagada" ? "Falta enviar" : "Falta cobrar"}</span></div>`).join("")}</div>
+        ${pendientes.length > 7 ? `<div class="dato tenue" style="margin-top:8px">y ${pendientes.length - 7} más en Ventas</div>` : ""}` : `<div class="vacio">Nada pendiente: todo cobrado y enviado.</div>`}
+    </section>
+    <section class="panel">
+      <h2>Stock bajo <span class="dato tenue">(${UMBRAL_STOCK_BAJO} o menos)</span></h2>
+      ${bajos.length ? `<div class="lista">${bajos.slice(0, 7).map(b => `
+        <div class="fila"><div style="min-width:0"><div>${esc(nombreProducto(b.p))}</div></div>
+        <div class="talles">${b.talles.map(t => `<span class="chip ${(Number(b.p.talles[t]) || 0) === 0 ? "naranja" : ""}">${esc(t)} ${Number(b.p.talles[t]) || 0}</span>`).join("")}</div></div>`).join("")}</div>` : `<div class="vacio">${datos.productos.length ? "Todos los talles que manejás tienen stock." : "Cargá tus camisetas en Stock para ver avisos acá."}</div>`}
+    </section>
+    <section class="panel">
+      <h2>Clubes más vendidos del mes</h2>
+      ${top.length ? `<div class="lista">${top.map(([club, n]) => `
+        <div class="fila" style="display:block"><div style="display:flex;justify-content:space-between"><span>${esc(club)}</span><span class="dato">${n} u.</span></div><div class="barra"><i style="width:${Math.max(4, n / maxTop * 100)}%"></i></div></div>`).join("")}</div>` : `<div class="vacio">Sin ventas en ${nombreMes(mes)}.</div>`}
+    </section>
+    <section class="panel">
+      <h2>Últimas ventas</h2>
+      ${ultimas.length ? `<div class="lista">${ultimas.map(v => `
+        <div class="fila"><div style="min-width:0"><div>${esc(v.clienteNombre || "Sin nombre")}</div><div class="dato tenue">${fechaCorta(v.fecha)} · ${esc(v.canal || "")}</div></div><span class="dato">${pesos(v.total)}</span></div>`).join("")}</div>` : `<div class="vacio">Todavía no registraste ventas.</div>`}
+    </section>
+    <section class="panel ancho">
+      <h2>Plata del mes</h2>
+      <div class="lista">
+        <div class="fila"><span>Ingresos por ventas</span><span class="dato">${pesos(r.facturacion)}</span></div>
+        <div class="fila"><span>Compras de mercadería</span><span class="dato">− ${pesos(r.compras)}</span></div>
+        <div class="fila"><span>Otros gastos (envíos, publicidad, packaging…)</span><span class="dato">− ${pesos(r.operativos)}</span></div>
+        <div class="fila"><b>Caja del mes</b><b class="dato" style="color:${r.caja < 0 ? "var(--naranja)" : "var(--menta)"}">${pesos(r.caja)}</b></div>
+      </div>
+      <div class="dato tenue" style="margin-top:10px;font-family:var(--sans)">La caja muestra cuánta plata entró y salió. El resultado (arriba) usa el costo de las camisetas que vendiste, así una compra grande de mercadería no te hace ver un mes en pérdida.</div>
+    </section>
+  </div>`;
+}
+
+/* ---------- Ventas ---------- */
+function vistaVentas() {
+  const b = normalizar(filtros.ventasBuscar);
+  let lista = datos.ventas.filter(v =>
+    (!filtros.ventasMes || mesDe(v.fecha) === filtros.ventasMes) &&
+    (!filtros.ventasEstado || v.estado === filtros.ventasEstado) &&
+    (!b || normalizar(v.clienteNombre + " " + (v.items || []).map(i => i.desc + " " + (i.pers || "")).join(" ")).includes(b)));
+  lista.sort((a, c) => (c.fecha || "").localeCompare(a.fecha || "") || (c.creado || 0) - (a.creado || 0));
+  const total = lista.reduce((a, v) => a + (Number(v.total) || 0), 0);
+  return cabecera("Ventas", `${lista.length} venta${lista.length === 1 ? "" : "s"} · ${pesos(total)}`, `<button class="btn principal-btn" data-accion="nueva-venta">+ Nueva venta</button>`) + `
+  <div class="filtros">
+    <input type="search" id="ventasBuscar" placeholder="Buscar cliente o camiseta" value="${esc(filtros.ventasBuscar)}">
+    ${selectMes("ventasMes", filtros.ventasMes, true)}
+    <select id="ventasEstado">${opciones(ESTADOS, filtros.ventasEstado, "Todos los estados")}</select>
+  </div>
+  ${lista.length ? `<div class="tabla-envoltura"><table>
+    <thead><tr><th>Fecha</th><th>Cliente</th><th>Detalle</th><th>Canal · pago</th><th class="num">Total</th><th>Estado</th><th></th></tr></thead>
+    <tbody>${lista.map(v => `<tr>
+      <td class="dato">${fechaCorta(v.fecha)}</td>
+      <td>${esc(v.clienteNombre || "Sin nombre")}</td>
+      <td>${(v.items || []).map(i => `<div>${Number(i.cant)}× ${esc(i.desc)} <span class="chip">${esc(i.talle)}</span>${i.pers ? ` <span class="tenue">· ${esc(i.pers)}</span>` : ""}</div>`).join("")}${v.encargo ? `<span class="chip naranja" style="margin-top:4px">Encargo</span>` : ""}${v.nota ? `<div class="tenue" style="font-size:13px">${esc(v.nota)}</div>` : ""}</td>
+      <td class="tenue">${esc(v.canal || "")}<br><span class="dato">${esc(v.medioPago || "")}</span></td>
+      <td class="num">${pesos(v.total)}${Number(v.descuento) ? `<div class="tenue" style="font-size:12px">desc. ${pesos(v.descuento)}</div>` : ""}</td>
+      <td><select class="estado ${v.estado === "Pendiente de pago" ? "e-pend" : v.estado === "Entregada" ? "e-entr" : ""}" data-estado-venta="${esc(v.id)}">${opciones(ESTADOS, v.estado)}</select></td>
+      <td><button class="icono-btn borrar" title="Borrar venta" aria-label="Borrar venta" data-accion="borrar-venta" data-id="${esc(v.id)}">${ICONO_BORRAR}</button></td>
+    </tr>`).join("")}</tbody></table></div>` : `<div class="panel"><div class="vacio">${datos.ventas.length ? "No hay ventas con esos filtros." : "Todavía no hay ventas. Tocá «Nueva venta» para registrar la primera."}</div></div>`}`;
+}
+
+/* ---------- Stock ---------- */
+function vistaStock() {
+  const b = normalizar(filtros.stockBuscar);
+  let lista = datos.productos.filter(p =>
+    (!b || normalizar([p.club, p.liga, p.temporada, p.modelo, p.version].join(" ")).includes(b)) &&
+    (!filtros.stockVersion || p.version === filtros.stockVersion) &&
+    (!filtros.stockSoloConStock || stockTotal(p) > 0));
+  lista.sort((a, c) => normalizar(a.club).localeCompare(normalizar(c.club)) || String(c.temporada || "").localeCompare(String(a.temporada || "")));
+  const unidades = lista.reduce((a, p) => a + stockTotal(p), 0);
+  return cabecera("Stock", `${lista.length} modelo${lista.length === 1 ? "" : "s"} · ${unidades} unidad${unidades === 1 ? "" : "es"}`, `<button class="btn principal-btn" data-accion="nuevo-producto">+ Nueva camiseta</button>`) + `
+  <div class="filtros">
+    <input type="search" id="stockBuscar" placeholder="Buscar club, liga, temporada…" value="${esc(filtros.stockBuscar)}">
+    <select id="stockVersion">${opciones(VERSIONES, filtros.stockVersion, "Todas las versiones")}</select>
+    <label class="check"><input type="checkbox" id="stockSoloConStock" ${filtros.stockSoloConStock ? "checked" : ""}> Solo con stock</label>
+  </div>
+  ${lista.length ? `<div class="tabla-envoltura"><table>
+    <thead><tr><th>Camiseta</th><th>Talles</th><th class="num">Total</th><th class="num">Costo</th><th class="num">Precio</th><th class="num">Margen</th><th></th></tr></thead>
+    <tbody>${lista.map(p => {
+      const margen = Number(p.precio) > 0 ? Math.round((Number(p.precio) - Number(p.costo)) / Number(p.precio) * 100) : 0;
+      const tl = tallesDe(p).filter(t => (p.tallesActivos || []).includes(t) || Number((p.talles || {})[t]) > 0);
+      return `<tr>
+      <td><div><b style="font-weight:600">${esc(p.club)}</b> <span class="dato tenue">${esc(p.temporada || "")}</span></div><div class="tenue" style="font-size:13px">${esc(p.modelo)} · ${esc(p.version)}${p.liga ? " · " + esc(p.liga) : ""}${p.tipoTalle === "nino" ? " · niño" : ""}</div></td>
+      <td><div class="talles">${tl.length ? tl.map(t => { const n = Number((p.talles || {})[t]) || 0; return `<span class="chip ${n === 0 ? "cero" : n <= UMBRAL_STOCK_BAJO ? "naranja" : "menta"}">${esc(t)} ${n}</span>`; }).join("") : `<span class="tenue">—</span>`}</div></td>
+      <td class="num">${stockTotal(p)}</td>
+      <td class="num">${pesos(p.costo)}</td>
+      <td class="num">${pesos(p.precio)}</td>
+      <td class="num ${margen < 0 ? "" : "tenue"}" style="${margen < 0 ? "color:var(--naranja)" : ""}">${margen}%</td>
+      <td style="white-space:nowrap"><button class="icono-btn" title="Editar" aria-label="Editar" data-accion="editar-producto" data-id="${esc(p.id)}">${ICONO_EDITAR}</button><button class="icono-btn borrar" title="Borrar" aria-label="Borrar" data-accion="borrar-producto" data-id="${esc(p.id)}">${ICONO_BORRAR}</button></td>
+    </tr>`; }).join("")}</tbody></table></div>` : `<div class="panel"><div class="vacio">${datos.productos.length ? "No hay camisetas con esos filtros." : "Cargá tu primera camiseta con «Nueva camiseta»: club, temporada, costo, precio y cuántas tenés de cada talle."}</div></div>`}`;
+}
+
+/* ---------- Clientes ---------- */
+function vistaClientes() {
+  const b = normalizar(filtros.clientesBuscar);
+  const stats = {};
+  datos.ventas.forEach(v => {
+    const k = v.clienteId || ("n:" + normalizar(v.clienteNombre));
+    const s = stats[k] || (stats[k] = { n: 0, total: 0, ultima: "" });
+    s.n++; s.total += Number(v.total) || 0; if ((v.fecha || "") > s.ultima) s.ultima = v.fecha;
+  });
+  let lista = datos.clientes.map(c => ({ c, s: stats[c.id] || stats["n:" + normalizar(c.nombre)] || { n: 0, total: 0, ultima: "" } }))
+    .filter(({ c }) => !b || normalizar([c.nombre, c.telefono, c.instagram, c.ciudad].join(" ")).includes(b));
+  lista.sort((a, c) => c.s.total - a.s.total || normalizar(a.c.nombre).localeCompare(normalizar(c.c.nombre)));
+  return cabecera("Clientes", `${datos.clientes.length} clientes`, `<button class="btn principal-btn" data-accion="nuevo-cliente">+ Nuevo cliente</button>`) + `
+  <div class="filtros"><input type="search" id="clientesBuscar" placeholder="Buscar nombre, teléfono, Instagram…" value="${esc(filtros.clientesBuscar)}"></div>
+  ${lista.length ? `<div class="tabla-envoltura"><table>
+    <thead><tr><th>Cliente</th><th>Contacto</th><th>Ciudad</th><th class="num">Compras</th><th class="num">Total</th><th>Última</th><th></th></tr></thead>
+    <tbody>${lista.map(({ c, s }) => `<tr>
+      <td>${esc(c.nombre)}${c.notas ? `<div class="tenue" style="font-size:13px">${esc(c.notas)}</div>` : ""}</td>
+      <td class="dato">${c.telefono ? esc(c.telefono) : ""}${c.telefono && c.instagram ? "<br>" : ""}${c.instagram ? esc(c.instagram) : ""}${!c.telefono && !c.instagram ? '<span class="tenue">—</span>' : ""}</td>
+      <td class="tenue">${esc(c.ciudad || "")}</td>
+      <td class="num">${s.n}</td>
+      <td class="num">${pesos(s.total)}</td>
+      <td class="dato tenue">${s.ultima ? fechaCorta(s.ultima) : "—"}</td>
+      <td style="white-space:nowrap"><button class="icono-btn" title="Editar" aria-label="Editar" data-accion="editar-cliente" data-id="${esc(c.id)}">${ICONO_EDITAR}</button><button class="icono-btn borrar" title="Borrar" aria-label="Borrar" data-accion="borrar-cliente" data-id="${esc(c.id)}">${ICONO_BORRAR}</button></td>
+    </tr>`).join("")}</tbody></table></div>` : `<div class="panel"><div class="vacio">${datos.clientes.length ? "No hay clientes con esa búsqueda." : "Los clientes se agregan solos al registrar una venta, o podés cargarlos acá."}</div></div>`}`;
+}
+
+/* ---------- Gastos ---------- */
+function vistaGastos() {
+  const lista = datos.gastos.filter(g => !filtros.gastosMes || mesDe(g.fecha) === filtros.gastosMes)
+    .sort((a, c) => (c.fecha || "").localeCompare(a.fecha || ""));
+  const total = lista.reduce((a, g) => a + (Number(g.monto) || 0), 0);
+  const porCat = {};
+  lista.forEach(g => { porCat[g.categoria] = (porCat[g.categoria] || 0) + (Number(g.monto) || 0); });
+  const cats = Object.entries(porCat).sort((a, b) => b[1] - a[1]);
+  const max = cats.length ? cats[0][1] : 1;
+  return cabecera("Gastos", `${lista.length} movimientos · ${pesos(total)}`, `<button class="btn principal-btn" data-accion="nuevo-gasto">+ Nuevo gasto</button>`) + `
+  <div class="filtros">${selectMes("gastosMes", filtros.gastosMes, true)}</div>
+  ${cats.length ? `<div class="panel" style="margin-bottom:16px"><h2>Por categoría</h2><div class="lista">${cats.map(([c, m]) => `
+    <div class="fila" style="display:block"><div style="display:flex;justify-content:space-between"><span>${esc(c)}</span><span class="dato">${pesos(m)}</span></div><div class="barra"><i style="width:${Math.max(3, m / max * 100)}%"></i></div></div>`).join("")}</div></div>` : ""}
+  ${lista.length ? `<div class="tabla-envoltura"><table>
+    <thead><tr><th>Fecha</th><th>Categoría</th><th>Descripción</th><th class="num">Monto</th><th></th></tr></thead>
+    <tbody>${lista.map(g => `<tr>
+      <td class="dato">${fechaCorta(g.fecha)}</td><td><span class="chip">${esc(g.categoria)}</span></td><td>${esc(g.descripcion || "")}</td><td class="num">${pesos(g.monto)}</td>
+      <td style="white-space:nowrap"><button class="icono-btn" title="Editar" aria-label="Editar" data-accion="editar-gasto" data-id="${esc(g.id)}">${ICONO_EDITAR}</button><button class="icono-btn borrar" title="Borrar" aria-label="Borrar" data-accion="borrar-gasto" data-id="${esc(g.id)}">${ICONO_BORRAR}</button></td>
+    </tr>`).join("")}</tbody></table></div>` : `<div class="panel"><div class="vacio">Sin gastos cargados${filtros.gastosMes ? " en " + nombreMes(filtros.gastosMes) : ""}. Anotá compras de mercadería, envíos, publicidad y todo lo que salga de la caja.</div></div>`}`;
+}
+
+/* ===================== Modales ===================== */
+function abrirModal(html, ancho) {
+  const capa = document.getElementById("capaModal");
+  capa.innerHTML = `<div class="velo" data-velo><div class="modal${ancho ? " ancho" : ""}" role="dialog" aria-modal="true">${html}</div></div>`;
+  const primero = capa.querySelector("input:not([type=checkbox]),select,textarea");
+  if (primero) primero.focus();
+  return capa.querySelector(".modal");
+}
+function cerrarModal() { document.getElementById("capaModal").innerHTML = ""; }
+function confirmar(titulo, texto, etiqueta, alConfirmar) {
+  const m = abrirModal(`<h2>${esc(titulo)}</h2><p class="tenue" style="margin:0">${texto}</p>
+    <div class="pie-modal"><button class="btn" data-cerrar>Cancelar</button><button class="btn peligro" data-ok>${esc(etiqueta)}</button></div>`);
+  m.querySelector("[data-ok]").addEventListener("click", async () => { cerrarModal(); try { await alConfirmar(); } catch (e) { errorEscritura(e); } });
+  m.querySelector("[data-ok]").focus();
+}
+function avisoEnModal(m, texto) {
+  let a = m.querySelector(".aviso");
+  if (!texto) { if (a) a.remove(); return; }
+  if (!a) { a = document.createElement("div"); a.className = "aviso"; a.style.marginTop = "14px"; a.style.marginBottom = "0"; m.querySelector(".pie-modal").before(a); }
+  a.innerHTML = ICONO_AVISO + `<div>${texto}</div>`;
+}
+
+/* ---------- Producto ---------- */
+function modalProducto(p) {
+  const nuevo = !p;
+  p = p || { club: "", liga: "", temporada: "", modelo: "Titular", version: "Hincha", tipoTalle: "adulto", talles: {}, tallesActivos: ["S", "M", "L", "XL", "XXL"], costo: "", precio: "", notas: "" };
+  const ligas = [...new Set(datos.productos.map(x => x.liga).filter(Boolean))];
+  const clubes = [...new Set(datos.productos.map(x => x.club).filter(Boolean))];
+  const m = abrirModal(`<h2>${nuevo ? "Nueva camiseta" : "Editar camiseta"}</h2>
+    <form class="form" id="formProducto" autocomplete="off">
+      <div class="campo"><label for="pClub">Club o selección</label><input id="pClub" list="lClubes" required value="${esc(p.club)}" placeholder="Ej.: Boca Juniors"></div>
+      <div class="campo"><label for="pLiga">Liga o grupo (opcional)</label><input id="pLiga" list="lLigas" value="${esc(p.liga || "")}" placeholder="Ej.: Argentina, Premier, Selecciones"></div>
+      <datalist id="lClubes">${clubes.map(c => `<option value="${esc(c)}">`).join("")}</datalist>
+      <datalist id="lLigas">${ligas.map(c => `<option value="${esc(c)}">`).join("")}</datalist>
+      <div class="campo"><label for="pTemporada">Temporada</label><input id="pTemporada" value="${esc(p.temporada || "")}" placeholder="Ej.: 2026 o 25/26"></div>
+      <div class="campo"><label for="pModelo">Modelo</label><select id="pModelo">${opciones(MODELOS, p.modelo)}</select></div>
+      <div class="campo"><label for="pVersion">Versión</label><select id="pVersion">${opciones(VERSIONES, p.version)}</select></div>
+      <div class="campo"><label for="pTipo">Talles</label><select id="pTipo"><option value="adulto"${p.tipoTalle !== "nino" ? " selected" : ""}>Adulto</option><option value="nino"${p.tipoTalle === "nino" ? " selected" : ""}>Niño</option></select></div>
+      <div class="campo"><label for="pCosto">Costo por unidad ($)</label><input id="pCosto" type="number" min="0" step="1" inputmode="numeric" value="${esc(p.costo)}" required></div>
+      <div class="campo"><label for="pPrecio">Precio de venta ($)</label><input id="pPrecio" type="number" min="0" step="1" inputmode="numeric" value="${esc(p.precio)}" required></div>
+      <div class="campo completo"><label>Unidades por talle <span class="tenue">(dejá vacío el talle que no manejás)</span></label><div class="talles-form" id="pTalles"></div></div>
+      <div class="campo completo"><label for="pNotas">Notas (opcional)</label><input id="pNotas" value="${esc(p.notas || "")}" placeholder="Proveedor, calidad, detalles…"></div>
+      <div class="dato tenue completo" id="pMargen"></div>
+    </form>
+    <div class="pie-modal"><button class="btn" data-cerrar>Cancelar</button><button class="btn principal-btn" data-guardar>${nuevo ? "Guardar camiseta" : "Guardar cambios"}</button></div>`);
+  const cont = m.querySelector("#pTalles");
+  const pintarTalles = () => {
+    const tipo = m.querySelector("#pTipo").value;
+    const lista = tipo === "nino" ? TALLES_NINO : TALLES_ADULTO;
+    cont.innerHTML = lista.map(t => {
+      const activo = (p.tallesActivos || []).includes(t) || Number((p.talles || {})[t]) > 0;
+      const val = activo ? (Number((p.talles || {})[t]) || 0) : "";
+      return `<div class="campo"><label for="t_${t}">${t}</label><input id="t_${t}" data-talle="${t}" type="number" min="0" step="1" inputmode="numeric" value="${val}" placeholder="–"></div>`;
+    }).join("");
+  };
+  pintarTalles();
+  m.querySelector("#pTipo").addEventListener("change", () => { p = { ...p, talles: {}, tallesActivos: m.querySelector("#pTipo").value === "nino" ? ["6", "8", "10", "12", "14"] : ["S", "M", "L", "XL", "XXL"] }; pintarTalles(); });
+  const margen = () => {
+    const c = numero(m.querySelector("#pCosto").value), pr = numero(m.querySelector("#pPrecio").value);
+    m.querySelector("#pMargen").textContent = pr > 0 ? `Ganás ${pesos(pr - c)} por camiseta (${Math.round((pr - c) / pr * 100)}% del precio).` : "";
+  };
+  m.querySelector("#pCosto").addEventListener("input", margen); m.querySelector("#pPrecio").addEventListener("input", margen); margen();
+  const enviar = async () => {
+    const club = m.querySelector("#pClub").value.trim();
+    if (!club) { avisoEnModal(m, "Poné el nombre del club o la selección."); return; }
+    if (m.querySelector("#pCosto").value === "" || m.querySelector("#pPrecio").value === "") { avisoEnModal(m, "Completá el costo y el precio de venta."); return; }
+    const talles = {}, activos = [];
+    m.querySelectorAll("[data-talle]").forEach(i => { if (i.value !== "") { talles[i.dataset.talle] = entero(i.value); activos.push(i.dataset.talle); } });
+    if (!activos.length) { avisoEnModal(m, "Indicá al menos un talle (aunque sea con 0 unidades)."); return; }
+    const obj = {
+      id: nuevo ? nuevoId() : p.id, club, liga: m.querySelector("#pLiga").value.trim(), temporada: m.querySelector("#pTemporada").value.trim(),
+      modelo: m.querySelector("#pModelo").value, version: m.querySelector("#pVersion").value, tipoTalle: m.querySelector("#pTipo").value,
+      talles, tallesActivos: activos, costo: numero(m.querySelector("#pCosto").value), precio: numero(m.querySelector("#pPrecio").value),
+      notas: m.querySelector("#pNotas").value.trim(), creado: p.creado || Date.now(),
+    };
+    const btn = m.querySelector("[data-guardar]"); btn.disabled = true;
+    try { await guardar("productos", obj); cerrarModal(); toast(nuevo ? "Camiseta cargada." : "Cambios guardados."); }
+    catch (e) { btn.disabled = false; errorEscritura(e); }
+  };
+  m.querySelector("[data-guardar]").addEventListener("click", enviar);
+  m.querySelector("#formProducto").addEventListener("submit", e => { e.preventDefault(); enviar(); });
+}
+
+/* ---------- Venta ---------- */
+function modalVenta() {
+  if (!datos.productos.length) {
+    abrirModal(`<h2>Primero cargá tu stock</h2><p class="tenue" style="margin:0">Para registrar una venta necesitás al menos una camiseta cargada en Stock (aunque sea un encargo con 0 unidades).</p>
+      <div class="pie-modal"><button class="btn" data-cerrar>Cerrar</button><button class="btn principal-btn" data-accion="ir-stock">Ir a Stock</button></div>`);
+    return;
+  }
+  const productos = [...datos.productos].sort((a, b) => nombreProducto(a).localeCompare(nombreProducto(b)));
+  const m = abrirModal(`<h2>Nueva venta</h2>
+    <form class="form form-3" id="formVenta" autocomplete="off">
+      <div class="campo"><label for="vFecha">Fecha</label><input id="vFecha" type="date" value="${hoy()}" required></div>
+      <div class="campo"><label for="vCliente">Cliente</label><input id="vCliente" list="lClientes" placeholder="Nombre (nuevo o existente)"></div>
+      <datalist id="lClientes">${datos.clientes.map(c => `<option value="${esc(c.nombre)}">`).join("")}</datalist>
+      <div class="campo"><label for="vContacto">Teléfono o Instagram <span class="tenue">(si es nuevo)</span></label><input id="vContacto" placeholder="Opcional"></div>
+      <div class="campo"><label for="vCanal">Canal</label><select id="vCanal">${opciones(CANALES, "Instagram")}</select></div>
+      <div class="campo"><label for="vPago">Medio de pago</label><select id="vPago">${opciones(MEDIOS_PAGO, "Transferencia")}</select></div>
+      <div class="campo"><label for="vEstado">Estado</label><select id="vEstado">${opciones(ESTADOS, "Pagada")}</select></div>
+      <div class="campo completo" style="grid-column:1/-1"><label>Camisetas</label><div class="items" id="vItems"></div>
+        <div><button type="button" class="btn chico" data-agregar-item style="margin-top:4px">+ Agregar otra camiseta</button></div></div>
+      <div class="campo"><label for="vDescuento">Descuento ($)</label><input id="vDescuento" type="number" min="0" step="1" value="0"></div>
+      <div class="campo"><label for="vEnvio">Envío cobrado ($)</label><input id="vEnvio" type="number" min="0" step="1" value="0"></div>
+      <div class="campo" style="justify-content:flex-end"><label class="check" style="padding-bottom:9px"><input type="checkbox" id="vEncargo"> Es un encargo (no descuenta stock)</label></div>
+      <div class="campo" style="grid-column:1/-1"><label for="vNota">Nota (opcional)</label><input id="vNota" placeholder="Dirección de envío, seña, fecha de entrega…"></div>
+    </form>
+    <div class="pie-modal"><div class="total" id="vTotal"></div><button class="btn" data-cerrar>Cancelar</button><button class="btn principal-btn" data-guardar>Registrar venta</button></div>`, true);
+
+  const cont = m.querySelector("#vItems");
+  const optsProductos = `<option value="">Elegí una camiseta…</option>` + productos.map(p => `<option value="${esc(p.id)}">${esc(nombreProducto(p))} — ${stockTotal(p)} u.</option>`).join("");
+  const agregarItem = () => {
+    const div = document.createElement("div");
+    div.className = "item";
+    div.innerHTML = `
+      <div class="campo"><label>Camiseta</label><select data-f="producto">${optsProductos}</select></div>
+      <div class="campo"><label>Talle</label><select data-f="talle"><option value="">—</option></select></div>
+      <div class="campo"><label>Cant.</label><input data-f="cant" type="number" min="1" step="1" value="1"></div>
+      <div class="campo"><label>Precio c/u</label><input data-f="precio" type="number" min="0" step="1" value=""></div>
+      <div class="campo pers"><label>Nombre y número</label><input data-f="pers" placeholder="Opcional, ej.: MESSI 10"></div>
+      <button type="button" class="icono-btn borrar" title="Quitar" aria-label="Quitar camiseta" data-quitar style="margin-bottom:6px">${ICONO_BORRAR}</button>`;
+    cont.appendChild(div);
+    const selP = div.querySelector('[data-f="producto"]'), selT = div.querySelector('[data-f="talle"]');
+    selP.addEventListener("change", () => {
+      const p = datos.productos.find(x => x.id === selP.value);
+      if (!p) { selT.innerHTML = `<option value="">—</option>`; return; }
+      const tl = tallesDe(p).filter(t => (p.tallesActivos || []).includes(t) || Number((p.talles || {})[t]) > 0);
+      selT.innerHTML = tl.map(t => `<option value="${t}">${t} (${Number((p.talles || {})[t]) || 0})</option>`).join("");
+      const conStock = tl.find(t => Number((p.talles || {})[t]) > 0); if (conStock) selT.value = conStock;
+      div.querySelector('[data-f="precio"]').value = p.precio;
+      recalcular();
+    });
+    div.querySelector("[data-quitar]").addEventListener("click", () => { if (cont.children.length > 1) { div.remove(); recalcular(); } });
+  };
+  const leerItems = () => [...cont.querySelectorAll(".item")].map(d => ({
+    productoId: d.querySelector('[data-f="producto"]').value, talle: d.querySelector('[data-f="talle"]').value,
+    cant: entero(d.querySelector('[data-f="cant"]').value), precio: numero(d.querySelector('[data-f="precio"]').value),
+    pers: d.querySelector('[data-f="pers"]').value.trim(),
+  }));
+  const recalcular = () => {
+    const items = leerItems();
+    const sub = subtotalItems(items);
+    const total = Math.max(0, sub - numero(m.querySelector("#vDescuento").value) + numero(m.querySelector("#vEnvio").value));
+    const u = items.reduce((a, i) => a + i.cant, 0);
+    m.querySelector("#vTotal").innerHTML = `<small>Total · ${u} camiseta${u === 1 ? "" : "s"}</small>${pesos(total)}`;
+    return total;
+  };
+  agregarItem();
+  m.querySelector("[data-agregar-item]").addEventListener("click", () => { agregarItem(); recalcular(); });
+  m.addEventListener("input", recalcular);
+  m.addEventListener("change", recalcular);
+  recalcular();
+
+  m.querySelector("[data-guardar]").addEventListener("click", async () => {
+    const items = leerItems().filter(i => i.productoId);
+    if (!items.length) { avisoEnModal(m, "Elegí al menos una camiseta."); return; }
+    if (items.some(i => !i.talle || i.cant < 1)) { avisoEnModal(m, "Revisá que cada camiseta tenga talle y cantidad."); return; }
+    const fecha = m.querySelector("#vFecha").value || hoy();
+    const encargo = m.querySelector("#vEncargo").checked;
+
+    // Stock necesario por producto y talle
+    const necesario = {};
+    items.forEach(i => { necesario[i.productoId] = necesario[i.productoId] || {}; necesario[i.productoId][i.talle] = (necesario[i.productoId][i.talle] || 0) + i.cant; });
+    if (!encargo) {
+      const faltantes = [];
+      Object.entries(necesario).forEach(([pid, ts]) => {
+        const p = datos.productos.find(x => x.id === pid);
+        Object.entries(ts).forEach(([t, n]) => { const hay = Number((p && p.talles || {})[t]) || 0; if (n > hay) faltantes.push(`${esc(p ? p.club : "?")} talle ${esc(t)}: pediste ${n}, hay ${hay}`); });
+      });
+      if (faltantes.length) { avisoEnModal(m, "No alcanza el stock:<br>" + faltantes.join("<br>") + "<br>Corregí las cantidades o marcá la venta como encargo."); return; }
+    }
+    avisoEnModal(m, "");
+
+    const btn = m.querySelector("[data-guardar]"); btn.disabled = true;
+    try {
+      const promesas = [];
+      // Cliente
+      const nombre = m.querySelector("#vCliente").value.trim() || "Consumidor final";
+      let cliente = clientePorNombre(nombre);
+      if (!cliente && nombre !== "Consumidor final") {
+        const contacto = m.querySelector("#vContacto").value.trim();
+        cliente = { id: nuevoId(), nombre, telefono: contacto && !contacto.startsWith("@") ? contacto : "", instagram: contacto.startsWith("@") ? contacto : "", ciudad: "", notas: "", creado: Date.now() };
+        promesas.push(guardar("clientes", cliente));
+      }
+      const venta = {
+        id: nuevoId(), fecha, clienteId: cliente ? cliente.id : "", clienteNombre: nombre,
+        canal: m.querySelector("#vCanal").value, medioPago: m.querySelector("#vPago").value, estado: m.querySelector("#vEstado").value,
+        items: items.map(i => { const p = datos.productos.find(x => x.id === i.productoId); return { ...i, club: p.club, desc: nombreProducto(p), costo: Number(p.costo) || 0 }; }),
+        descuento: numero(m.querySelector("#vDescuento").value), envio: numero(m.querySelector("#vEnvio").value),
+        total: recalcular(), encargo, descontoStock: !encargo, nota: m.querySelector("#vNota").value.trim(), creado: Date.now(),
+      };
+      promesas.push(guardar("ventas", venta));
+      if (!encargo) {
+        for (const [pid, ts] of Object.entries(necesario)) {
+          const p = datos.productos.find(x => x.id === pid); if (!p) continue;
+          const talles = { ...(p.talles || {}) };
+          Object.entries(ts).forEach(([t, n]) => { talles[t] = Math.max(0, (Number(talles[t]) || 0) - n); });
+          promesas.push(guardar("productos", { ...p, talles }));
+        }
+      }
+      btn.textContent = "Guardando…";
+      await Promise.all(promesas);
+      cerrarModal(); toast("Venta registrada" + (encargo ? " como encargo." : " y stock actualizado."));
+    } catch (e) { btn.disabled = false; btn.textContent = "Registrar venta"; errorEscritura(e); }
+  });
+}
+
+/* ---------- Cliente ---------- */
+function modalCliente(c) {
+  const nuevo = !c;
+  c = c || { nombre: "", telefono: "", instagram: "", ciudad: "", notas: "" };
+  const m = abrirModal(`<h2>${nuevo ? "Nuevo cliente" : "Editar cliente"}</h2>
+    <form class="form" id="formCliente" autocomplete="off">
+      <div class="campo completo"><label for="cNombre">Nombre</label><input id="cNombre" required value="${esc(c.nombre)}"></div>
+      <div class="campo"><label for="cTel">Teléfono / WhatsApp</label><input id="cTel" value="${esc(c.telefono || "")}"></div>
+      <div class="campo"><label for="cIg">Instagram</label><input id="cIg" value="${esc(c.instagram || "")}" placeholder="@usuario"></div>
+      <div class="campo"><label for="cCiudad">Ciudad / barrio</label><input id="cCiudad" value="${esc(c.ciudad || "")}"></div>
+      <div class="campo"><label for="cNotas">Notas</label><input id="cNotas" value="${esc(c.notas || "")}" placeholder="Hincha de…, talle habitual…"></div>
+    </form>
+    <div class="pie-modal"><button class="btn" data-cerrar>Cancelar</button><button class="btn principal-btn" data-guardar>Guardar</button></div>`);
+  const enviar = async () => {
+    const nombre = m.querySelector("#cNombre").value.trim();
+    if (!nombre) { avisoEnModal(m, "Poné el nombre del cliente."); return; }
+    const otro = clientePorNombre(nombre);
+    if (otro && otro.id !== c.id) { avisoEnModal(m, "Ya tenés un cliente con ese nombre."); return; }
+    const obj = { id: nuevo ? nuevoId() : c.id, nombre, telefono: m.querySelector("#cTel").value.trim(), instagram: m.querySelector("#cIg").value.trim(), ciudad: m.querySelector("#cCiudad").value.trim(), notas: m.querySelector("#cNotas").value.trim(), creado: c.creado || Date.now() };
+    const btn = m.querySelector("[data-guardar]"); btn.disabled = true;
+    try {
+      const promesas = [guardar("clientes", obj)];
+      // Mantener el nombre al día en sus ventas
+      if (!nuevo && obj.nombre !== c.nombre) {
+        datos.ventas.filter(v => v.clienteId === c.id).forEach(v => promesas.push(guardar("ventas", { ...v, clienteNombre: obj.nombre })));
+      }
+      await Promise.all(promesas);
+      cerrarModal(); toast("Cliente guardado.");
+    } catch (e) { btn.disabled = false; errorEscritura(e); }
+  };
+  m.querySelector("[data-guardar]").addEventListener("click", enviar);
+  m.querySelector("#formCliente").addEventListener("submit", e => { e.preventDefault(); enviar(); });
+}
+
+/* ---------- Gasto ---------- */
+function modalGasto(g) {
+  const nuevo = !g;
+  g = g || { fecha: hoy(), categoria: "Compra de mercadería", descripcion: "", monto: "" };
+  const m = abrirModal(`<h2>${nuevo ? "Nuevo gasto" : "Editar gasto"}</h2>
+    <form class="form" id="formGasto" autocomplete="off">
+      <div class="campo"><label for="gFecha">Fecha</label><input id="gFecha" type="date" value="${esc(g.fecha)}"></div>
+      <div class="campo"><label for="gCat">Categoría</label><select id="gCat">${opciones(CATEGORIAS_GASTO, g.categoria)}</select></div>
+      <div class="campo completo"><label for="gDesc">Descripción</label><input id="gDesc" value="${esc(g.descripcion || "")}" placeholder="Ej.: 20 camisetas al proveedor, envío Andreani…"></div>
+      <div class="campo"><label for="gMonto">Monto ($)</label><input id="gMonto" type="number" min="0" step="1" value="${esc(g.monto)}" required></div>
+    </form>
+    <div class="dato tenue" style="margin-top:10px;font-family:var(--sans)">Las compras de mercadería cuentan para la caja; el resultado del mes usa el costo de cada camiseta vendida.</div>
+    <div class="pie-modal"><button class="btn" data-cerrar>Cancelar</button><button class="btn principal-btn" data-guardar>Guardar</button></div>`);
+  const enviar = async () => {
+    const monto = numero(m.querySelector("#gMonto").value);
+    if (monto <= 0) { avisoEnModal(m, "Poné un monto mayor a cero."); return; }
+    const obj = { id: nuevo ? nuevoId() : g.id, fecha: m.querySelector("#gFecha").value || hoy(), categoria: m.querySelector("#gCat").value, descripcion: m.querySelector("#gDesc").value.trim(), monto, creado: g.creado || Date.now() };
+    const btn = m.querySelector("[data-guardar]"); btn.disabled = true;
+    try { await guardar("gastos", obj); cerrarModal(); toast("Gasto guardado."); } catch (e) { btn.disabled = false; errorEscritura(e); }
+  };
+  m.querySelector("[data-guardar]").addEventListener("click", enviar);
+  m.querySelector("#formGasto").addEventListener("submit", e => { e.preventDefault(); enviar(); });
+}
+
+/* ---------- Respaldo ---------- */
+function modalRespaldo() {
+  const json = JSON.stringify({ exportado: new Date().toISOString(), ...datos }, null, 1);
+  const m = abrirModal(`<h2>Respaldo de tus datos</h2>
+    <p class="tenue" style="margin:0 0 10px">Copiá este texto y guardalo en un archivo (por ejemplo, <span class="dato">respaldo-vestuario.txt</span>). Para recuperar tus datos en otro navegador, pegá acá un respaldo y tocá «Restaurar».</p>
+    <textarea id="textoRespaldo" style="width:100%;height:220px;font-family:var(--mono);font-size:12px">${esc(json)}</textarea>
+    <div class="pie-modal"><button class="btn peligro" data-restaurar style="margin-right:auto">Restaurar</button><button class="btn" data-cerrar>Cerrar</button><button class="btn principal-btn" data-copiar>Copiar</button></div>`);
+  m.querySelector("[data-copiar]").addEventListener("click", async () => {
+    const t = m.querySelector("textarea");
+    try { await navigator.clipboard.writeText(t.value); toast("Respaldo copiado."); }
+    catch (e) { t.focus(); t.select(); toast("Seleccioné el texto: copialo con Ctrl+C.", true); }
+  });
+  m.querySelector("[data-restaurar]").addEventListener("click", () => {
+    let d;
+    try { d = JSON.parse(m.querySelector("textarea").value); } catch (e) { avisoEnModal(m, "El texto no es un respaldo válido. Pegalo completo, sin cambios."); return; }
+    if (!d || !COLECCIONES.every(c => Array.isArray(d[c]))) { avisoEnModal(m, "El texto no tiene el formato de un respaldo de Vestuario."); return; }
+    const resumen = `${d.productos.length} camisetas, ${d.ventas.length} ventas, ${d.clientes.length} clientes y ${d.gastos.length} gastos`;
+    confirmar("Restaurar respaldo", `Vas a reemplazar todo lo que hay ahora por el respaldo (${resumen}). Lo actual se pierde.`, "Restaurar", async () => {
+      const promesas = [];
+      COLECCIONES.forEach(c => {
+        const nuevos = d[c].filter(x => x && typeof x === "object" && x.id);
+        const ids = new Set(nuevos.map(x => x.id));
+        datos[c].filter(x => !ids.has(x.id)).forEach(x => promesas.push(borrar(c, x.id)));
+        nuevos.forEach(x => promesas.push(guardar(c, x)));
+      });
+      await Promise.all(promesas); toast("Respaldo restaurado.");
+    });
+  });
+}
+
+/* ===================== Eventos ===================== */
+document.addEventListener("click", e => {
+  if (e.target.matches("[data-velo]") || e.target.closest("[data-cerrar]")) { cerrarModal(); return; }
+  const b = e.target.closest("[data-accion]"); if (!b) return;
+  const id = b.dataset.id;
+  switch (b.dataset.accion) {
+    case "nueva-venta":
+      if (conexion) { toast("Actualizando stock…"); refrescar().then(modalVenta); } else modalVenta();
+      break;
+    case "sincronizar": refrescar().then(() => toast(modo === "sheets" ? "Datos actualizados." : "No pude sincronizar con la planilla.", modo !== "sheets")); break;
+    case "usar-local": try { localStorage.setItem(CLAVE_SIN_CONEXION, "1"); } catch (e) {} setModo("local"); break;
+    case "desconectar":
+      confirmar("Desconectar este dispositivo", "Este dispositivo deja de usar la planilla. Tus datos siguen guardados en Google Sheets y podés volver a conectarte cuando quieras.", "Desconectar", async () => {
+        conexion = null; grabarConexion(null); ultimoRemoto = "";
+        COLECCIONES.forEach(c => { datos[c] = []; }); guardarLocal();
+        modo = "sin-configurar"; pintarEstadoDatos(); render(); toast("Dispositivo desconectado.");
+      });
+      break;
+    case "ir-stock": cerrarModal(); location.hash = "stock"; break;
+    case "nuevo-producto": modalProducto(); break;
+    case "editar-producto": modalProducto(datos.productos.find(x => x.id === id)); break;
+    case "borrar-producto": {
+      const p = datos.productos.find(x => x.id === id); if (!p) break;
+      confirmar("Borrar camiseta", `Vas a borrar <b>${esc(nombreProducto(p))}</b> con ${stockTotal(p)} unidades en stock. Las ventas ya registradas no se modifican.`, "Borrar", async () => { await borrar("productos", id); toast("Camiseta borrada."); });
+      break;
+    }
+    case "borrar-venta": {
+      const v = datos.ventas.find(x => x.id === id); if (!v) break;
+      confirmar("Borrar venta", `Vas a borrar la venta a <b>${esc(v.clienteNombre)}</b> del ${fechaCorta(v.fecha)} por ${pesos(v.total)}.${v.descontoStock ? " Las camisetas vuelven al stock." : ""}`, "Borrar venta", async () => {
+        const promesas = [borrar("ventas", id)];
+        if (v.descontoStock) {
+          const devolver = {};
+          (v.items || []).forEach(i => { devolver[i.productoId] = devolver[i.productoId] || {}; devolver[i.productoId][i.talle] = (devolver[i.productoId][i.talle] || 0) + (Number(i.cant) || 0); });
+          for (const [pid, ts] of Object.entries(devolver)) {
+            const p = datos.productos.find(x => x.id === pid); if (!p) continue;
+            const talles = { ...(p.talles || {}) };
+            Object.entries(ts).forEach(([t, n]) => { talles[t] = (Number(talles[t]) || 0) + n; });
+            const activos = [...new Set([...(p.tallesActivos || []), ...Object.keys(ts)])];
+            promesas.push(guardar("productos", { ...p, talles, tallesActivos: activos }));
+          }
+        }
+        await Promise.all(promesas);
+        toast("Venta borrada" + (v.descontoStock ? " y stock devuelto." : "."));
+      });
+      break;
+    }
+    case "nuevo-cliente": modalCliente(); break;
+    case "editar-cliente": modalCliente(datos.clientes.find(x => x.id === id)); break;
+    case "borrar-cliente": {
+      const c = datos.clientes.find(x => x.id === id); if (!c) break;
+      confirmar("Borrar cliente", `Vas a borrar a <b>${esc(c.nombre)}</b>. Sus ventas quedan registradas con su nombre.`, "Borrar", async () => { await borrar("clientes", id); toast("Cliente borrado."); });
+      break;
+    }
+    case "nuevo-gasto": modalGasto(); break;
+    case "editar-gasto": modalGasto(datos.gastos.find(x => x.id === id)); break;
+    case "borrar-gasto": {
+      const g = datos.gastos.find(x => x.id === id); if (!g) break;
+      confirmar("Borrar gasto", `Vas a borrar el gasto de ${pesos(g.monto)} (${esc(g.categoria)}).`, "Borrar", async () => { await borrar("gastos", id); toast("Gasto borrado."); });
+      break;
+    }
+    case "respaldo": modalRespaldo(); break;
+  }
+});
+document.addEventListener("submit", e => { if (e.target.id === "formConexion") { e.preventDefault(); conectar(); } });
+document.addEventListener("keydown", e => { if (e.key === "Escape" && document.querySelector("#capaModal .velo")) cerrarModal(); });
+
+document.getElementById("vista").addEventListener("input", e => {
+  const id = e.target.id;
+  if (id === "ventasBuscar" || id === "stockBuscar" || id === "clientesBuscar") { filtros[id] = e.target.value; render(); }
+});
+document.getElementById("vista").addEventListener("change", async e => {
+  const t = e.target;
+  if (t.dataset.estadoVenta) {
+    const v = datos.ventas.find(x => x.id === t.dataset.estadoVenta);
+    if (v && v.estado !== t.value) { try { await guardar("ventas", { ...v, estado: t.value }); toast("Estado actualizado."); } catch (err) { errorEscritura(err); render(); } }
+    return;
+  }
+  if (["mesResumen", "ventasMes", "ventasEstado", "stockVersion", "gastosMes"].includes(t.id)) { filtros[t.id] = t.value; render(); }
+  if (t.id === "stockSoloConStock") { filtros.stockSoloConStock = t.checked; render(); }
+});
+
+const VISTAS = ["resumen", "ventas", "stock", "clientes", "gastos", "conexion"];
+function leerHash() { const h = location.hash.replace("#", ""); vistaActual = VISTAS.includes(h) ? h : "resumen"; render(); }
+window.addEventListener("hashchange", leerHash);
+
+leerHash();
+pintarEstadoDatos();
+iniciarDatos();
+})();
+</script>
+</body>
+</html>
