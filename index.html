@@ -61,7 +61,7 @@ select{cursor:pointer}
 .tenue{color:var(--texto-tenue)}
 .num{font-family:var(--mono);text-align:right;white-space:nowrap}
 /* Tarjetas */
-.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin-bottom:20px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:20px}
 .kpi{background:var(--superficie);border:1px solid var(--borde-suave);border-radius:var(--r-lg);padding:14px 16px}
 .kpi .etiqueta{font-size:12.5px;color:var(--texto-tenue)}
 .kpi .valor{font-family:var(--mono);font-size:22px;font-weight:600;margin-top:4px;letter-spacing:-.02em}
@@ -116,6 +116,8 @@ select.estado.e-entr{color:var(--menta);border-color:var(--menta-borde);backgrou
 .talles-form input{text-align:center;font-family:var(--mono);padding:7px 4px}
 .items{display:flex;flex-direction:column;gap:8px}
 .item{display:grid;grid-template-columns:minmax(0,2.6fr) minmax(0,1fr) 70px minmax(0,1.1fr) minmax(0,1.6fr) 30px;gap:8px;align-items:end;background:var(--superficie);border:1px solid var(--borde-suave);border-radius:var(--r-lg);padding:10px}
+.item input,.item select{width:100%}
+.items.encargo .item{grid-template-columns:minmax(0,2.6fr) minmax(0,1fr) 70px minmax(0,1.1fr) minmax(0,1.1fr) minmax(0,1.6fr) 30px}
 .check{display:flex;align-items:center;gap:8px;font-size:14px;cursor:pointer}
 .check input{width:16px;height:16px;accent-color:var(--menta)}
 .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--superficie-alta);border:1px solid var(--borde);padding:10px 16px;border-radius:var(--r-md);font-size:14px;z-index:60;box-shadow:0 6px 24px rgba(0,0,0,.35)}
@@ -134,8 +136,8 @@ select.estado.e-entr{color:var(--menta);border-color:var(--menta-borde);backgrou
   .kpi .valor{font-size:18px}
   .form,.form-3{grid-template-columns:1fr}
   .talles-form{grid-template-columns:repeat(4,minmax(0,1fr))}
-  .item{grid-template-columns:1fr 1fr}
-  .item .campo:first-child,.item .campo.pers{grid-column:1/-1}
+  .item,.items.encargo .item{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+  .item .campo.camiseta,.item .campo.pers{grid-column:1/-1}
 }
 </style>
 </head>
@@ -213,7 +215,7 @@ function nombreMes(m) { if (!m) return ""; const [a, mm] = m.split("-"); return 
 function normalizar(s) { return String(s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").trim(); }
 function tallesDe(p) { return p && p.tipoTalle === "nino" ? TALLES_NINO : TALLES_ADULTO; }
 function stockTotal(p) { return Object.values(p.talles || {}).reduce((a, b) => a + (Number(b) || 0), 0); }
-function nombreProducto(p) { if (!p) return "Producto eliminado"; return [p.club, p.temporada].filter(Boolean).join(" ") + " · " + p.modelo + " · " + p.version + (p.tipoTalle === "nino" ? " · niño" : ""); }
+function nombreProducto(p) { if (!p) return "Producto eliminado"; return [[p.club, p.temporada].filter(Boolean).join(" "), p.modelo, p.version, p.tipoTalle === "nino" ? "niño" : ""].filter(Boolean).join(" · "); }
 function opciones(lista, actual, vacio) {
   return (vacio !== undefined ? `<option value="">${esc(vacio)}</option>` : "") +
     lista.map(v => `<option value="${esc(v)}"${v === actual ? " selected" : ""}>${esc(v)}</option>`).join("");
@@ -497,6 +499,7 @@ function vistaResumen() {
     <div class="kpi"><div class="etiqueta">Camisetas vendidas</div><div class="valor">${r.unidades}</div><div class="detalle">${r.vs.length ? "ticket prom. " + pesos(r.facturacion / r.vs.length) : "sin ventas todavía"}</div></div>
     <div class="kpi"><div class="etiqueta">Margen bruto</div><div class="valor menta">${pesos(r.margen)}</div><div class="detalle">${margenPct}% sobre ventas · costo ${pesos(r.costo)}</div></div>
     <div class="kpi"><div class="etiqueta">Resultado del mes</div><div class="valor ${r.resultado < 0 ? "naranja" : ""}">${pesos(r.resultado)}</div><div class="detalle">margen − gastos (${pesos(r.operativos)})</div></div>
+    <div class="kpi"><div class="etiqueta">Caja del mes</div><div class="valor ${r.caja < 0 ? "naranja" : "menta"}">${pesos(r.caja)}</div><div class="detalle">ventas − compras − gastos</div></div>
     <div class="kpi"><div class="etiqueta">Stock actual</div><div class="valor">${stockUnidades} u.</div><div class="detalle">${pesos(stockValor)} a costo</div></div>
   </div>
   <div class="grilla">
@@ -585,7 +588,7 @@ function vistaStock() {
       const margen = Number(p.precio) > 0 ? Math.round((Number(p.precio) - Number(p.costo)) / Number(p.precio) * 100) : 0;
       const tl = tallesDe(p).filter(t => (p.tallesActivos || []).includes(t) || Number((p.talles || {})[t]) > 0);
       return `<tr>
-      <td><div><b style="font-weight:600">${esc(p.club)}</b> <span class="dato tenue">${esc(p.temporada || "")}</span></div><div class="tenue" style="font-size:13px">${esc(p.modelo)} · ${esc(p.version)}${p.liga ? " · " + esc(p.liga) : ""}${p.tipoTalle === "nino" ? " · niño" : ""}</div></td>
+      <td><div><b style="font-weight:600">${esc(p.club)}</b> <span class="dato tenue">${esc(p.temporada || "")}</span></div><div class="tenue" style="font-size:13px">${esc([p.modelo, p.version, p.liga, p.tipoTalle === "nino" ? "niño" : ""].filter(Boolean).join(" · ")) || "Completá modelo y versión"}</div></td>
       <td><div class="talles">${tl.length ? tl.map(t => { const n = Number((p.talles || {})[t]) || 0; return `<span class="chip ${n === 0 ? "cero" : n <= UMBRAL_STOCK_BAJO ? "naranja" : "menta"}">${esc(t)} ${n}</span>`; }).join("") : `<span class="tenue">—</span>`}</div></td>
       <td class="num">${stockTotal(p)}</td>
       <td class="num">${pesos(p.costo)}</td>
@@ -728,60 +731,105 @@ function modalProducto(p) {
 
 /* ---------- Venta ---------- */
 function modalVenta() {
-  if (!datos.productos.length) {
-    abrirModal(`<h2>Primero cargá tu stock</h2><p class="tenue" style="margin:0">Para registrar una venta necesitás al menos una camiseta cargada en Stock (aunque sea un encargo con 0 unidades).</p>
-      <div class="pie-modal"><button class="btn" data-cerrar>Cerrar</button><button class="btn principal-btn" data-accion="ir-stock">Ir a Stock</button></div>`);
-    return;
-  }
   const productos = [...datos.productos].sort((a, b) => nombreProducto(a).localeCompare(nombreProducto(b)));
+  const sinProductos = !productos.length;
   const m = abrirModal(`<h2>Nueva venta</h2>
     <form class="form form-3" id="formVenta" autocomplete="off">
       <div class="campo"><label for="vFecha">Fecha</label><input id="vFecha" type="date" value="${hoy()}" required></div>
       <div class="campo"><label for="vCliente">Cliente</label><input id="vCliente" list="lClientes" placeholder="Nombre (nuevo o existente)"></div>
       <datalist id="lClientes">${datos.clientes.map(c => `<option value="${esc(c.nombre)}">`).join("")}</datalist>
+      <datalist id="lProductos">${productos.map(p => `<option value="${esc(nombreProducto(p))}">`).join("")}</datalist>
       <div class="campo"><label for="vContacto">Teléfono o Instagram <span class="tenue">(si es nuevo)</span></label><input id="vContacto" placeholder="Opcional"></div>
       <div class="campo"><label for="vCanal">Canal</label><select id="vCanal">${opciones(CANALES, "Instagram")}</select></div>
       <div class="campo"><label for="vPago">Medio de pago</label><select id="vPago">${opciones(MEDIOS_PAGO, "Transferencia")}</select></div>
       <div class="campo"><label for="vEstado">Estado</label><select id="vEstado">${opciones(ESTADOS, "Pagada")}</select></div>
+      <div class="campo" style="grid-column:1/-1"><label class="check"><input type="checkbox" id="vEncargo"${sinProductos ? " checked" : ""}> Es un encargo: no descuenta stock y podés escribir cualquier camiseta</label>
+        <div class="dato tenue" id="vAyudaEncargo" style="font-family:var(--sans)"></div></div>
       <div class="campo completo" style="grid-column:1/-1"><label>Camisetas</label><div class="items" id="vItems"></div>
         <div><button type="button" class="btn chico" data-agregar-item style="margin-top:4px">+ Agregar otra camiseta</button></div></div>
       <div class="campo"><label for="vDescuento">Descuento ($)</label><input id="vDescuento" type="number" min="0" step="1" value="0"></div>
       <div class="campo"><label for="vEnvio">Envío cobrado ($)</label><input id="vEnvio" type="number" min="0" step="1" value="0"></div>
-      <div class="campo" style="justify-content:flex-end"><label class="check" style="padding-bottom:9px"><input type="checkbox" id="vEncargo"> Es un encargo (no descuenta stock)</label></div>
+      <div class="campo"></div>
       <div class="campo" style="grid-column:1/-1"><label for="vNota">Nota (opcional)</label><input id="vNota" placeholder="Dirección de envío, seña, fecha de entrega…"></div>
     </form>
     <div class="pie-modal"><div class="total" id="vTotal"></div><button class="btn" data-cerrar>Cancelar</button><button class="btn principal-btn" data-guardar>Registrar venta</button></div>`, true);
 
   const cont = m.querySelector("#vItems");
+  const chkEncargo = m.querySelector("#vEncargo");
+  const esEncargo = () => chkEncargo.checked;
   const optsProductos = `<option value="">Elegí una camiseta…</option>` + productos.map(p => `<option value="${esc(p.id)}">${esc(nombreProducto(p))} — ${stockTotal(p)} u.</option>`).join("");
+  const optsTodosTalles = `<option value="">—</option><optgroup label="Adulto">${TALLES_ADULTO.map(t => `<option value="${t}">${t}</option>`).join("")}</optgroup><optgroup label="Niño">${TALLES_NINO.map(t => `<option value="${t}">${t}</option>`).join("")}</optgroup>`;
+
+  // Busca un producto cargado por el nombre escrito (nombre completo, o el club si hay uno solo de ese club)
+  const productoPorNombre = texto => {
+    const n = normalizar(texto); if (!n) return null;
+    const exacto = datos.productos.find(p => normalizar(nombreProducto(p)) === n);
+    if (exacto) return exacto;
+    const delClub = datos.productos.filter(p => normalizar(p.club) === n);
+    return delClub.length === 1 ? delClub[0] : null;
+  };
+
+  const pintarModo = () => {
+    const enc = esEncargo();
+    cont.classList.toggle("encargo", enc);
+    cont.querySelectorAll(".item").forEach(div => {
+      div.querySelectorAll(".solo-stock").forEach(e => e.classList.toggle("oculto", enc));
+      div.querySelectorAll(".solo-encargo").forEach(e => e.classList.toggle("oculto", !enc));
+    });
+    m.querySelector("#vAyudaEncargo").textContent = enc
+      ? "Escribí la camiseta (o elegí una de la lista). Si no existe, se crea en Stock con 0 unidades."
+      : (sinProductos ? "Todavía no cargaste camisetas en Stock: marcá «Es un encargo» o cargalas primero." : "");
+  };
+
   const agregarItem = () => {
     const div = document.createElement("div");
     div.className = "item";
     div.innerHTML = `
-      <div class="campo"><label>Camiseta</label><select data-f="producto">${optsProductos}</select></div>
-      <div class="campo"><label>Talle</label><select data-f="talle"><option value="">—</option></select></div>
+      <div class="campo camiseta solo-stock"><label>Camiseta</label><select data-f="producto">${optsProductos}</select></div>
+      <div class="campo camiseta solo-encargo"><label>Camiseta</label><input data-f="nombre" list="lProductos" placeholder="Ej.: Barcelona 2026 Suplente"></div>
+      <div class="campo solo-stock"><label>Talle</label><select data-f="talle"><option value="">—</option></select></div>
+      <div class="campo solo-encargo"><label>Talle</label><select data-f="talleLibre">${optsTodosTalles}</select></div>
       <div class="campo"><label>Cant.</label><input data-f="cant" type="number" min="1" step="1" value="1"></div>
       <div class="campo"><label>Precio c/u</label><input data-f="precio" type="number" min="0" step="1" value=""></div>
+      <div class="campo solo-encargo"><label>Costo c/u</label><input data-f="costo" type="number" min="0" step="1" value="" placeholder="0"></div>
       <div class="campo pers"><label>Nombre y número</label><input data-f="pers" placeholder="Opcional, ej.: MESSI 10"></div>
       <button type="button" class="icono-btn borrar" title="Quitar" aria-label="Quitar camiseta" data-quitar style="margin-bottom:6px">${ICONO_BORRAR}</button>`;
     cont.appendChild(div);
     const selP = div.querySelector('[data-f="producto"]'), selT = div.querySelector('[data-f="talle"]');
+    const txtN = div.querySelector('[data-f="nombre"]'), selTL = div.querySelector('[data-f="talleLibre"]');
+    const inPrecio = div.querySelector('[data-f="precio"]'), inCosto = div.querySelector('[data-f="costo"]');
     selP.addEventListener("change", () => {
       const p = datos.productos.find(x => x.id === selP.value);
       if (!p) { selT.innerHTML = `<option value="">—</option>`; return; }
       const tl = tallesDe(p).filter(t => (p.tallesActivos || []).includes(t) || Number((p.talles || {})[t]) > 0);
       selT.innerHTML = tl.map(t => `<option value="${t}">${t} (${Number((p.talles || {})[t]) || 0})</option>`).join("");
       const conStock = tl.find(t => Number((p.talles || {})[t]) > 0); if (conStock) selT.value = conStock;
-      div.querySelector('[data-f="precio"]').value = p.precio;
+      inPrecio.value = p.precio;
+      // mantener el modo encargo en sintonía
+      txtN.value = nombreProducto(p); inCosto.value = p.costo;
+      recalcular();
+    });
+    selT.addEventListener("change", () => { if (selT.value) selTL.value = selT.value; });
+    txtN.addEventListener("change", () => {
+      const p = productoPorNombre(txtN.value);
+      if (p) {
+        if (inPrecio.value === "") inPrecio.value = p.precio;
+        if (inCosto.value === "") inCosto.value = p.costo;
+      }
       recalcular();
     });
     div.querySelector("[data-quitar]").addEventListener("click", () => { if (cont.children.length > 1) { div.remove(); recalcular(); } });
+    pintarModo();
   };
-  const leerItems = () => [...cont.querySelectorAll(".item")].map(d => ({
-    productoId: d.querySelector('[data-f="producto"]').value, talle: d.querySelector('[data-f="talle"]').value,
-    cant: entero(d.querySelector('[data-f="cant"]').value), precio: numero(d.querySelector('[data-f="precio"]').value),
-    pers: d.querySelector('[data-f="pers"]').value.trim(),
-  }));
+
+  const leerItems = () => [...cont.querySelectorAll(".item")].map(d => {
+    const base = { cant: entero(d.querySelector('[data-f="cant"]').value), precio: numero(d.querySelector('[data-f="precio"]').value), pers: d.querySelector('[data-f="pers"]').value.trim() };
+    if (esEncargo()) {
+      const costoTxt = d.querySelector('[data-f="costo"]').value;
+      return { ...base, nombre: d.querySelector('[data-f="nombre"]').value.trim(), talle: d.querySelector('[data-f="talleLibre"]').value, costoEscrito: costoTxt === "" ? null : numero(costoTxt) };
+    }
+    return { ...base, productoId: d.querySelector('[data-f="producto"]').value, talle: d.querySelector('[data-f="talle"]').value };
+  });
   const recalcular = () => {
     const items = leerItems();
     const sub = subtotalItems(items);
@@ -791,22 +839,76 @@ function modalVenta() {
     return total;
   };
   agregarItem();
+  chkEncargo.addEventListener("change", () => {
+    // Al volver a modo stock, si el nombre escrito coincide con un producto cargado, se selecciona
+    if (!esEncargo()) cont.querySelectorAll(".item").forEach(div => {
+      const p = productoPorNombre(div.querySelector('[data-f="nombre"]').value);
+      const selP = div.querySelector('[data-f="producto"]');
+      if (p && selP.value !== p.id) { selP.value = p.id; selP.dispatchEvent(new Event("change")); }
+    });
+    pintarModo(); recalcular();
+  });
   m.querySelector("[data-agregar-item]").addEventListener("click", () => { agregarItem(); recalcular(); });
   m.addEventListener("input", recalcular);
   m.addEventListener("change", recalcular);
   recalcular();
 
   m.querySelector("[data-guardar]").addEventListener("click", async () => {
-    const items = leerItems().filter(i => i.productoId);
-    if (!items.length) { avisoEnModal(m, "Elegí al menos una camiseta."); return; }
+    const encargo = esEncargo();
+    const items = leerItems().filter(i => encargo ? i.nombre : i.productoId);
+    if (!items.length) { avisoEnModal(m, encargo ? "Escribí al menos una camiseta." : "Elegí al menos una camiseta."); return; }
     if (items.some(i => !i.talle || i.cant < 1)) { avisoEnModal(m, "Revisá que cada camiseta tenga talle y cantidad."); return; }
     const fecha = m.querySelector("#vFecha").value || hoy();
-    const encargo = m.querySelector("#vEncargo").checked;
+    const promesas = [];
+    let creadas = 0;
 
-    // Stock necesario por producto y talle
+    // ---- Encargo: resolver o crear los productos (con stock 0) ----
+    if (encargo) {
+      const nuevos = {}; // nombre normalizado -> producto creado en esta venta
+      const comoSeEscribio = {}; // primera forma en que se tipeó cada nombre, para no crear "Barcelona" y "barcelona"
+      items.forEach(i => { const k = normalizar(i.nombre); if (!comoSeEscribio[k]) comoSeEscribio[k] = i.nombre; });
+      const tocados = {}; // productos existentes a los que se les suma un talle nuevo (en 0)
+      items.forEach(i => {
+        const tipo = TALLES_NINO.includes(i.talle) ? "nino" : "adulto";
+        let p = productoPorNombre(i.nombre);
+        // Si la camiseta existe pero en el otro tipo de talle (adulto/niño), buscar su versión del tipo pedido
+        if (p && (p.tipoTalle === "nino" ? "nino" : "adulto") !== tipo) {
+          const base = p;
+          p = datos.productos.find(x => normalizar(x.club) === normalizar(base.club) && (x.temporada || "") === (base.temporada || "") &&
+            (x.modelo || "") === (base.modelo || "") && (x.version || "") === (base.version || "") && (x.tipoTalle === "nino" ? "nino" : "adulto") === tipo) || null;
+          if (!p) { i.base = base; }
+        }
+        if (!p) {
+          const clave = normalizar(i.base ? i.base.id : i.nombre) + "|" + tipo;
+          if (!nuevos[clave]) {
+            const b = i.base;
+            nuevos[clave] = {
+              id: nuevoId(), club: b ? b.club : comoSeEscribio[normalizar(i.nombre)], liga: b ? (b.liga || "") : "", temporada: b ? (b.temporada || "") : "",
+              modelo: b ? (b.modelo || "") : "", version: b ? (b.version || "") : "",
+              tipoTalle: tipo,
+              talles: {}, tallesActivos: [], costo: i.costoEscrito ?? (b ? Number(b.costo) || 0 : 0), precio: i.precio,
+              notas: "Creada desde un encargo", creado: Date.now(),
+            };
+          }
+          p = nuevos[clave];
+          if (!p.tallesActivos.includes(i.talle)) { p.tallesActivos.push(i.talle); p.talles[i.talle] = 0; }
+        } else if (!(p.tallesActivos || []).includes(i.talle) && tallesDe(p).includes(i.talle)) {
+          const t = tocados[p.id] || (tocados[p.id] = { ...p, talles: { ...(p.talles || {}) }, tallesActivos: [...(p.tallesActivos || [])] });
+          if (!t.tallesActivos.includes(i.talle)) { t.tallesActivos.push(i.talle); if (t.talles[i.talle] === undefined) t.talles[i.talle] = 0; }
+        }
+        i.producto = p;
+      });
+      creadas = Object.keys(nuevos).length;
+      Object.values(nuevos).forEach(p => promesas.push(guardar("productos", p)));
+      Object.values(tocados).forEach(p => promesas.push(guardar("productos", p)));
+    } else {
+      items.forEach(i => { i.producto = datos.productos.find(x => x.id === i.productoId); });
+    }
+
+    // ---- Venta común: controlar stock ----
     const necesario = {};
-    items.forEach(i => { necesario[i.productoId] = necesario[i.productoId] || {}; necesario[i.productoId][i.talle] = (necesario[i.productoId][i.talle] || 0) + i.cant; });
     if (!encargo) {
+      items.forEach(i => { necesario[i.productoId] = necesario[i.productoId] || {}; necesario[i.productoId][i.talle] = (necesario[i.productoId][i.talle] || 0) + i.cant; });
       const faltantes = [];
       Object.entries(necesario).forEach(([pid, ts]) => {
         const p = datos.productos.find(x => x.id === pid);
@@ -818,7 +920,6 @@ function modalVenta() {
 
     const btn = m.querySelector("[data-guardar]"); btn.disabled = true;
     try {
-      const promesas = [];
       // Cliente
       const nombre = m.querySelector("#vCliente").value.trim() || "Consumidor final";
       let cliente = clientePorNombre(nombre);
@@ -830,7 +931,11 @@ function modalVenta() {
       const venta = {
         id: nuevoId(), fecha, clienteId: cliente ? cliente.id : "", clienteNombre: nombre,
         canal: m.querySelector("#vCanal").value, medioPago: m.querySelector("#vPago").value, estado: m.querySelector("#vEstado").value,
-        items: items.map(i => { const p = datos.productos.find(x => x.id === i.productoId); return { ...i, club: p.club, desc: nombreProducto(p), costo: Number(p.costo) || 0 }; }),
+        items: items.map(i => {
+          const p = i.producto;
+          const costo = i.costoEscrito != null ? i.costoEscrito : (Number(p.costo) || 0);
+          return { productoId: p.id, talle: i.talle, cant: i.cant, precio: i.precio, pers: i.pers, club: p.club, desc: nombreProducto(p), costo };
+        }),
         descuento: numero(m.querySelector("#vDescuento").value), envio: numero(m.querySelector("#vEnvio").value),
         total: recalcular(), encargo, descontoStock: !encargo, nota: m.querySelector("#vNota").value.trim(), creado: Date.now(),
       };
@@ -845,7 +950,8 @@ function modalVenta() {
       }
       btn.textContent = "Guardando…";
       await Promise.all(promesas);
-      cerrarModal(); toast("Venta registrada" + (encargo ? " como encargo." : " y stock actualizado."));
+      cerrarModal();
+      toast(encargo ? `Encargo registrado${creadas ? ` · ${creadas} camiseta${creadas === 1 ? " nueva" : "s nuevas"} en Stock` : ""}.` : "Venta registrada y stock actualizado.");
     } catch (e) { btn.disabled = false; btn.textContent = "Registrar venta"; errorEscritura(e); }
   });
 }
